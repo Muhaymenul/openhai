@@ -2,8 +2,7 @@
 
 基于 [Papernook](https://github.com/affromero/papernook) 与 [PaperFlow](https://github.com/weijian-ai/PaperFlow) 整合的本机论文研究应用。下载或 clone 本仓库后，通过 Docker 在自己的电脑部署，浏览器入口为 `/workspace`。
 
-论文、批注、笔记和研究记录保存在本机。AI 分析使用你自行配置的 OpenAI 兼容接口及额度；模型服务的收费与使用限制以服务商为准。本仓库不提供公共令牌，也不包含作者的个人论文库。
-
+论文、批注、笔记和研究记录保存在本机。AI 分析使用你自行配置的 OpenAI 兼容接口及额度；模型服务的收费与使用限制以服务商为准。
 ## 可以做什么
 
 - 导入 PDF，管理题名、作者、标签和阅读进度，进行全文检索。
@@ -12,7 +11,7 @@
 - 保存笔记版本、复习进度和研究待办，导出 Markdown、图谱、成果 ZIP 与日历提醒。
 - 在知识图谱中核对概念关系及原文证据，再确认或拒绝候选关系。
 
-阅读、人工批注、笔记编辑、样例导入与本地检索不需要模型令牌。AI 功能会把所选材料发送给你配置的模型服务，输出需要人工核对。带文字层的 PDF 可建立全文索引；扫描件可以阅读和批注，本版不自动 OCR。三个内置样例均为明确标注的原创合成测试材料。
+阅读、人工批注、笔记编辑、样例导入与本地检索不需要模型令牌。AI 功能会把所选材料发送给你配置的模型服务，输出需要人工核对。带文字层的 PDF 可建立全文索引。
 
 完整操作指南见 [使用说明](docs/使用说明.md)，技术与目录说明见 [上游来源与整合说明](UPSTREAM.md)。
 
@@ -32,10 +31,9 @@
 
 ## 准备环境
 
-安装带 **Docker Compose v2** 的 Docker。Windows 和 macOS 可使用 Docker Desktop；Windows 请启用 WSL2 和 Linux 容器。Linux 可使用本机 Docker Engine 与 Compose 插件。建议给 Docker 分配 8 GB 内存，并预留至少 10 GB 可用磁盘；这只是构建与使用建议，实际占用随论文数量增长。
+安装带 **Docker Compose v2** 的 Docker。Windows 和 macOS 可使用 Docker Desktop；Windows 请启用 WSL2 和 Linux 容器。Linux 可使用本机 Docker Engine 与 Compose 插件。建议给 Docker 分配 8 GB 内存，并预留至少 10 GB 可用磁盘。
 
-首次构建需要联网获取基础镜像和开源依赖，可能需要数分钟。宿主机无需另装 Node.js、Python 或数据库服务器。启动脚本使用本机 Docker 引擎，不配置远程云构建。
-
+首次构建需要联网获取基础镜像和开源依赖，可能需要数分钟。宿主机无需另装 Node.js、Python 或数据库服务器。
 ## Windows：clone 或下载 ZIP
 
 有 Git 时，在准备保存项目的目录运行：
@@ -88,8 +86,6 @@ PAPERFLOW_LLM_API_KEY=
 ```
 
 发布模板中的接口地址、模型 ID 和令牌均为空。请在这三行等号后分别填写服务商提供的接口根地址、可用的模型 ID 和你自己的令牌；三项齐全后才启用 AI。Base URL 是 OpenAI 兼容接口的根地址，通常包含 `/v1`；不要填网页聊天地址，也不要追加 `/chat/completions`。模型 ID 必须与服务商支持的名称完全一致。
-
-具有相应访问资格的用户，可以自行选择华师大接口 `https://chat.ecnu.edu.cn/open/api/v1` 和模型 ID `ecnu-max`；它们只是可选示例，仍需你自己的有效令牌和额度。其他用户可以填写自己的 OpenAI 兼容 Chat Completions 服务。不要把令牌粘贴到 Issue、截图或公开仓库中。
 
 修改后重新加载研究服务：
 
@@ -150,6 +146,6 @@ Linux / macOS 可先运行 `sh stop.sh`，再将 `data/` 和 `runtime/` 复制�
 
 ## 来源与反馈
 
-本仓库是面向个人教研阅读的整合版本，不是 Papernook 或 PaperFlow 官方发行版。原项目作者、固定提交、各部分许可及字体和画作来源见 [UPSTREAM.md](UPSTREAM.md)、[来源与许可](THIRD_PARTY_NOTICES.md)、`app/LICENSE` 与 `services/paperflow/LICENSE`。第三方组件继续遵守各自许可证。
+本仓库是面向个人教研阅读的整合版本。原项目作者、固定提交、各部分许可及字体和画作来源见 [UPSTREAM.md](UPSTREAM.md)、[来源与许可](THIRD_PARTY_NOTICES.md)、`app/LICENSE` 与 `services/paperflow/LICENSE`。第三方组件继续遵守各自许可证。
 
-遇到部署或使用问题，请到 [Issues](https://github.com/Muhaymenul/openhai/issues) 提交系统、Docker 版本、操作步骤与已去除隐私的错误信息；请勿上传个人论文、模型令牌或完整私有配置。
+遇到部署或使用问题，请到 [Issues](https://github.com/Muhaymenul/openhai/issues) 提交系统、Docker 版本、操作步骤与已去除隐私的错误信息。

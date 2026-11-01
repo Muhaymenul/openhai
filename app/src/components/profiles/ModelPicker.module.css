@@ -1,0 +1,386 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.current {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.35rem;
+  padding: 0 0 1rem;
+  border-bottom: 1px solid rgba(127, 127, 127, 0.22);
+}
+
+.currentLabel {
+  color: color-mix(in oklab, currentColor 56%, transparent);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.currentValue {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  overflow-wrap: anywhere;
+}
+
+.currentValue strong {
+  font-size: 0.9rem;
+}
+
+.currentValue code {
+  color: color-mix(in oklab, currentColor 68%, transparent);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.78rem;
+}
+
+.line {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.reloadRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.secondaryAction {
+  min-height: 36px;
+  padding: 0 0.7rem;
+  border: 1px solid rgba(127, 127, 127, 0.35);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondaryAction:hover:not(:disabled) {
+  border-color: var(--settings-accent, #8a612f);
+  background: color-mix(
+    in oklab,
+    var(--settings-accent, #8a612f) 8%,
+    transparent
+  );
+}
+
+.secondaryAction:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.switchRow {
+  display: flex;
+  align-items: center;
+}
+
+.switch {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.35rem 0.55rem 0.35rem 0.45rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.switchTrack {
+  position: relative;
+  width: 2.75rem;
+  height: 1.5rem;
+  flex: 0 0 auto;
+  border: 1px solid rgba(127, 127, 127, 0.42);
+  border-radius: 999px;
+  background: rgba(127, 127, 127, 0.18);
+  transition:
+    border-color 120ms ease,
+    background 120ms ease;
+}
+
+.switchThumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+  transition: transform 120ms ease;
+}
+
+.switch[aria-checked="true"] .switchTrack {
+  border-color: var(--settings-accent, #8a612f);
+  background: color-mix(
+    in oklab,
+    var(--settings-accent, #8a612f) 72%,
+    transparent
+  );
+}
+
+.switch[aria-checked="true"] .switchThumb {
+  background: var(--settings-accent-contrast, #fff);
+  transform: translateX(1.25rem);
+}
+
+.switchText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+  font-size: 0.8rem;
+}
+
+.switchText strong {
+  font-size: 0.86rem;
+}
+
+.switchText span {
+  opacity: 0.62;
+}
+
+.switch:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.chip,
+.chipActive {
+  min-height: 44px;
+  padding: 0 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(127, 127, 127, 0.35);
+  background: transparent;
+  color: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease;
+}
+
+.chip:hover:not(:disabled),
+.chipActive:hover:not(:disabled) {
+  border-color: rgba(83, 100, 217, 0.78);
+  background: rgba(83, 100, 217, 0.08);
+}
+
+.chipActive {
+  border-color: rgba(63, 79, 176, 0.7);
+  background: rgba(63, 79, 176, 0.12);
+  font-weight: 600;
+}
+
+.input {
+  flex: 1;
+  min-width: 180px;
+  min-height: 44px;
+  padding: 0 0.6rem;
+  border-radius: 8px;
+  border: 1px solid rgba(127, 127, 127, 0.3);
+  background: transparent;
+  color: inherit;
+  font-size: 0.85rem;
+}
+
+.save {
+  min-height: 44px;
+  padding: 0 0.9rem;
+  border-radius: 8px;
+  border: 0;
+  background: var(--settings-accent, #8a612f);
+  color: var(--settings-accent-contrast, #fff);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.chip:disabled,
+.save:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.chipActive:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.status {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  align-items: start;
+  gap: 0.8rem;
+  margin: 0.25rem 0 0.35rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid color-mix(in oklab, currentColor 28%, transparent);
+  border-left-width: 4px;
+  border-radius: 10px;
+  background: color-mix(in oklab, currentColor 5%, transparent);
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.05);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.status[data-tone="error"] {
+  border-color: color-mix(in oklab, #a42e2b 58%, transparent);
+  background: color-mix(in oklab, #a42e2b 9%, transparent);
+  color: #8f2926;
+}
+
+.status[data-tone="success"] {
+  border-color: color-mix(in oklab, #1f7a50 52%, transparent);
+  background: color-mix(in oklab, #1f7a50 8%, transparent);
+  color: #176341;
+}
+
+.status[data-tone="info"] {
+  border-color: color-mix(
+    in oklab,
+    var(--settings-accent, #8a612f) 48%,
+    transparent
+  );
+  background: color-mix(
+    in oklab,
+    var(--settings-accent, #8a612f) 8%,
+    transparent
+  );
+}
+
+.statusMark {
+  display: inline-flex;
+  width: 2.1rem;
+  height: 2.1rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.statusCopy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.16rem;
+}
+
+.statusCopy strong {
+  font-size: 0.96rem;
+}
+
+.statusCopy > span {
+  color: color-mix(in oklab, currentColor 82%, transparent);
+  overflow-wrap: anywhere;
+}
+
+.draftNote {
+  margin: -0.25rem 0 0;
+  color: var(--settings-accent, #8a612f);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.hint {
+  font-size: 0.78rem;
+  opacity: 0.6;
+  font-weight: 400;
+}
+
+.readyDot,
+.notReadyDot,
+.checkingDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 0.4rem;
+}
+
+.readyDot {
+  background: #1f8a5b;
+}
+
+.notReadyDot {
+  background: #a42e2b;
+}
+
+.checkingDot {
+  background: rgba(127, 127, 127, 0.6);
+  animation: checking 1s ease-in-out infinite alternate;
+}
+
+@keyframes checking {
+  to {
+    opacity: 0.35;
+  }
+}
+
+.readinessNote {
+  margin-left: 0.4rem;
+  font-size: 0.72rem;
+  opacity: 0.6;
+}
+
+.chip:focus-visible,
+.chipActive:focus-visible,
+.switch:focus-visible,
+.secondaryAction:focus-visible,
+.input:focus-visible,
+.save:focus-visible {
+  outline: 2px solid var(--settings-accent, #8a612f);
+  outline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+  .current {
+    display: block;
+  }
+
+  .currentValue {
+    justify-content: flex-start;
+    margin-top: 0.45rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .checkingDot {
+    animation: none;
+  }
+
+  .switchTrack,
+  .switchThumb {
+    transition: none;
+  }
+}
+
+:global([data-theme="dark"]) .status[data-tone="error"] {
+  color: #f08a80;
+}
+
+:global([data-theme="dark"]) .status[data-tone="success"] {
+  color: #70d3a4;
+}

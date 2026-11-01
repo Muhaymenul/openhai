@@ -1,0 +1,16 @@
+name: 功能建议
+description: 提出研究工作流改进
+title: "[建议] "
+body:
+  - type: textarea
+    id: scenario
+    attributes:
+      label: 使用场景与问题
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 希望实现的行为与验收标准
+    validations:
+      required: true

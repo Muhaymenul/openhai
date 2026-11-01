@@ -1,0 +1,121 @@
+"use client";
+
+import { useEffect, useId, useRef, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { ThemeToggle } from "./ThemeToggle";
+import { clearOfflineForAuthentication } from "@/lib/offline/storage";
+import styles from "./AccountBar.module.css";
+
+/**
+ * Netflix-style account control: the round avatar sits top-right; clicking
+ * it opens the menu (Settings, Switch profile, Log out). Switching is free,
+ * the session already proves the access password; logging out closes the
+ * gate so the next visitor needs the password again.
+ */
+
+interface AccountBarProps {
+  displayName: string;
+  avatarSlug: string;
+}
+
+export function AccountBar({ displayName, avatarSlug }: AccountBarProps) {
+  const menuId = useId();
+  const [open, setOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener("mousedown", close);
+    return () => window.removeEventListener("mousedown", close);
+  }, [open]);
+
+  async function logout(): Promise<void> {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    setLogoutError(null);
+    try {
+      const response = await fetch("/api/v1/session", {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Could not log out. Try again.");
+      await clearOfflineForAuthentication();
+      window.location.replace("/login");
+    } catch {
+      setLogoutError("Could not log out. Try again.");
+      setLoggingOut(false);
+    }
+  }
+
+  return (
+    <div className={styles.root} ref={rootRef}>
+      <Link className={styles.brand} href="/" aria-label="papernook home">
+        <Image
+          src="/logo.svg"
+          width={32}
+          height={30}
+          alt=""
+          className={styles.logo}
+        />
+        <span>papernook</span>
+      </Link>
+      <div className={styles.controls}>
+        <ThemeToggle />
+        <button
+          type="button"
+          className={styles.avatarBtn}
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          aria-controls={menuId}
+          aria-label={`Account menu for ${displayName}`}
+        >
+          <Image
+            src={`/avatars/${avatarSlug}.png`}
+            alt=""
+            width={40}
+            height={40}
+            className={styles.avatar}
+          />
+        </button>
+      </div>
+      {open && (
+        <div className={styles.menu} id={menuId} aria-label="Account options">
+          <p className={styles.menuWho}>
+            <Image
+              src={`/avatars/${avatarSlug}.png`}
+              alt=""
+              width={28}
+              height={28}
+              className={styles.avatar}
+            />
+            {displayName}
+          </p>
+          <Link href="/graph" onClick={() => setOpen(false)}>
+            Graph
+          </Link>
+          <Link href="/settings" onClick={() => setOpen(false)}>
+            Settings
+          </Link>
+          <a href="/offline/index.html">Downloads</a>
+          <Link href="/login" onClick={() => setOpen(false)}>
+            Switch profile
+          </Link>
+          <button
+            type="button"
+            disabled={loggingOut}
+            onClick={() => void logout()}
+          >
+            Log out
+          </button>
+          {logoutError && <p role="alert">{logoutError}</p>}
+        </div>
+      )}
+    </div>
+  );
+}

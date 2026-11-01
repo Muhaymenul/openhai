@@ -1,0 +1,106 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { FileLockBusyError } from "thesidedoor-core/storage";
+import { captureIdentity } from "@/lib/auth/profile-capability";
+import { sharedAccess } from "@/lib/auth/access";
+import {
+  consumeRequestLimit,
+  recordFailure,
+  retryAfterMs,
+} from "@/lib/auth/rate-limit";
+import { clientIp, lockoutKey } from "@/lib/auth/request-security";
+import { captureAsync } from "@/lib/capture";
+import { CaptureError } from "@/lib/capture/download";
+import { readBoundedForm, RequestBodyError } from "@/lib/bounded-request";
+import { errorPage, pendingPage } from "./pages";
+
+/**
+ * The one-tap capture endpoint. Authenticated by the per-profile capture
+ * token (works logged-out: the Shortcut and bookmarklet land here from any
+ * browser). Credentials are accepted only in POST bodies so they never enter
+ * browser history, proxy logs, analytics URLs, or referrer headers.
+ */
+
+export const dynamic = "force-dynamic";
+
+async function handle(request: NextRequest): Promise<NextResponse> {
+  let form: URLSearchParams;
+  try {
+    form = await readBoundedForm(request, 32 * 1024);
+  } catch (err) {
+    return html(
+      errorPage("Request body too large."),
+      err instanceof RequestBodyError ? err.status : 400,
+    );
+  }
+  const url = form.get("url") ?? "";
+  const token = form.get("token") ?? "";
+
+  // Its own bucket, never the login one: /add deliberately accepts
+  // cross-site form posts, so a hostile page could otherwise make a victim's
+  // browser submit bad tokens until that victim is locked out of signing in.
+  const ipKey = lockoutKey(request, "capture-token-ip");
+  if (ipKey && retryAfterMs(ipKey) > 0) {
+    return html(errorPage("Too many attempts. Try again later."), 429);
+  }
+  const admission = await captureIdentity(sharedAccess().identity, token);
+  const profile = admission?.profile;
+  if (!profile) {
+    if (ipKey) recordFailure(ipKey);
+    return html(
+      errorPage(
+        "Invalid capture token. Re-copy your bookmarklet or Shortcut from Settings.",
+      ),
+      401,
+    );
+  }
+  const quotaWait = Math.max(
+    consumeRequestLimit(`capture-ip:${clientIp(request)}`, 30, 60 * 60_000),
+    consumeRequestLimit(`capture-profile:${profile.username}`, 20, 60 * 60_000),
+  );
+  if (quotaWait > 0) {
+    return html(errorPage("Capture limit reached. Try again later."), 429);
+  }
+  if (!url) {
+    return html(errorPage("No URL provided."), 400);
+  }
+
+  try {
+    // Async: the pending page polls /add/status for the outcome, so the
+    // response returns before Cloudflare's 100s proxy limit can cut it.
+    const result = await captureAsync(url, admission!.capability);
+    const nonce = request.headers.get("x-nonce") ?? "";
+    return html(pendingPage(result.slug, token, nonce), 202);
+  } catch (err) {
+    if (err instanceof FileLockBusyError) {
+      const response = html(
+        errorPage("Capture is busy. Try again shortly."),
+        503,
+      );
+      response.headers.set("Retry-After", "1");
+      return response;
+    }
+    console.error(`papernook capture failed (${url}):`, err);
+    const message =
+      err instanceof CaptureError
+        ? err.message
+        : `Capture failed: ${err instanceof Error ? err.message : "unknown error"}`;
+    return html(errorPage(message), err instanceof CaptureError ? 422 : 500);
+  }
+}
+
+function html(body: string, status: number): NextResponse {
+  return new NextResponse(body, {
+    status,
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "no-store",
+      "referrer-policy": "no-referrer",
+      "x-content-type-options": "nosniff",
+      "x-robots-tag": "noindex, nofollow",
+    },
+  });
+}
+
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  return handle(request);
+}

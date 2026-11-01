@@ -1,0 +1,43 @@
+.root {
+  --paper-accent: #315f4c;
+  --paper-line: rgba(23, 23, 23, 0.14);
+  --paper-muted: rgba(23, 23, 23, 0.62);
+  --paper-surface: rgba(49, 95, 76, 0.07);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 1rem 1.25rem;
+  box-sizing: border-box;
+  gap: 0.8rem;
+}
+
+.chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+.summary {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  opacity: 0.85;
+  max-height: 7.5rem;
+  overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+  .root {
+    height: auto;
+    padding: 0.75rem;
+  }
+}
+
+:global(html[data-theme="dark"]) .root {
+  --paper-line: rgba(237, 237, 237, 0.17);
+  --paper-muted: rgba(237, 237, 237, 0.62);
+  --paper-surface: rgba(74, 143, 114, 0.12);
+  --paper-accent: #78ae95;
+}

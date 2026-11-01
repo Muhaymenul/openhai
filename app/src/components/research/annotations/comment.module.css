@@ -1,0 +1,68 @@
+.location {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  color: #6f7881;
+  font-size: 12px;
+}
+.location details {
+  position: relative;
+}
+.location summary {
+  cursor: pointer;
+}
+.location details[open] label {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 5;
+  min-width: 130px;
+  padding: 12px;
+  border: 1px solid #dbe0e5;
+  background: #fff;
+  box-shadow: 0 4px 16px #17272a1a;
+}
+.quote {
+  max-height: 112px;
+  overflow: auto;
+}
+.hint,
+.shortcut {
+  color: #7b858e;
+  font-size: 12px;
+}
+.discard {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid #e4d7b9;
+  background: #fbf8f0;
+  color: #76623b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.discard p {
+  margin: 0 0 8px;
+}
+.discard button {
+  padding: 5px 9px;
+  margin-right: 8px;
+  border: 1px solid #d9ccad;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.discard button:focus-visible {
+  outline: 2px solid #8f7540;
+  outline-offset: 2px;
+}
+.shortcut {
+  margin-right: auto;
+}
+@media (max-width: 600px) {
+  .shortcut {
+    display: none;
+  }
+}

@@ -1,0 +1,104 @@
+import { notFound, redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { activeProfile } from "@/lib/auth/session";
+import { getPaper } from "@/lib/library/papers";
+import { readingPositionKey } from "@/lib/pdf/view/reading-position";
+import { getProvider, hasConfiguredProvider } from "@/lib/agent/registry";
+import { ChatPanel } from "@/components/chat/ChatPanel";
+import { ReadingWorkspace } from "@/components/chat/ReadingWorkspace";
+import { PdfReader } from "@/components/pdf/PdfReader";
+import { CopySourceLinkButton } from "@/components/paper/CopySourceLinkButton";
+import { PaperHeader } from "@/components/paper/PaperHeader";
+import { DownloadButton } from "@/components/offline/DownloadButton";
+import styles from "./paper.module.css";
+import { readConnection } from "@/lib/sharing/storage";
+import { CollaborationPanel } from "@/components/share/SharingControls";
+import { PaperExercises } from "@/components/share/StudyArtifacts";
+
+export const dynamic = "force-dynamic";
+
+interface PaperPageProps {
+  params: Promise<{ topic: string; slug: string }>;
+}
+
+export async function generateMetadata({ params }: PaperPageProps) {
+  const { topic, slug } = await params;
+  const paper = getPaper(topic, slug);
+  return { title: paper ? paper.meta.title : "papernook" };
+}
+
+export default async function PaperPage({ params }: PaperPageProps) {
+  const profile = await activeProfile();
+  if (!profile) redirect("/login");
+  const { topic, slug } = await params;
+  const paper = getPaper(topic, slug);
+  if (!paper) notFound();
+
+  const meta = paper.meta;
+  const connection = readConnection(topic, slug);
+  const headerStore = await headers();
+  const protocol = headerStore.get("x-forwarded-proto") ?? "http";
+  const hostname = headerStore.get("host") ?? "localhost";
+  const currentOrigin = `${protocol}://${hostname}`;
+  const aiAvailable = hasConfiguredProvider();
+  const visionAvailable = aiAvailable && getProvider().capabilities.vision;
+  const bibliographyEndpoint = `/api/v1/papers/${topic}/${slug}/bibliography`;
+  return (
+    <main className={styles.root}>
+      <ReadingWorkspace
+        mainLabel="Paper PDF"
+        actions={
+          <DownloadButton
+            snapshotUrl={`/api/v1/offline/papers/${topic}/${slug}`}
+          />
+        }
+        header={
+          <>
+            <PaperHeader topic={topic} slug={slug} meta={meta} view="reader" />
+          </>
+        }
+        collapsedHeaderActions={
+          <CopySourceLinkButton sourceUrl={meta.sourceUrl} />
+        }
+        main={
+          <PdfReader
+            src={`/api/v1/papers/${topic}/${slug}/pdf`}
+            title={meta.title}
+            editable={!connection || connection.username === profile.username}
+            libraryLookup
+            chatPrompts={aiAvailable}
+            positionKey={readingPositionKey(topic, slug, profile.username)}
+            positionEndpoint={`/api/v1/papers/${topic}/${slug}/position`}
+            bibliographyEndpoint={bibliographyEndpoint}
+          />
+        }
+        chat={
+          <div className={styles.chat}>
+            <CollaborationPanel
+              topic={topic}
+              slug={slug}
+              connected={connection !== null}
+            />
+            <PaperExercises
+              topic={topic}
+              slug={slug}
+              editable={!connection || connection.username === profile.username}
+            />
+            {paper.summary && <p className={styles.summary}>{paper.summary}</p>}
+            <ChatPanel
+              topic={topic}
+              slug={slug}
+              currentOrigin={currentOrigin}
+              paperSourceUrl={meta.sourceUrl ?? undefined}
+              aiAvailable={aiAvailable}
+              visionAvailable={visionAvailable}
+              marginNotes
+              bibliographyEndpoint={bibliographyEndpoint}
+              hasReader
+            />
+          </div>
+        }
+      />
+    </main>
+  );
+}

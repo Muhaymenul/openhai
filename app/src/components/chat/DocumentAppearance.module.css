@@ -1,0 +1,43 @@
+.control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  font-size: 0.72rem;
+  color: inherit;
+}
+.control select {
+  width: 9rem;
+  min-height: 44px;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.control select:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+@media (max-width: 1100px) {
+  .control > span {
+    display: none;
+  }
+}
+.control[data-compact="true"] {
+  flex: none;
+  gap: 3px;
+  min-height: 30px;
+}
+.control[data-compact="true"] select {
+  width: 64px;
+  min-height: 30px;
+  height: 30px;
+  padding: 0 3px;
+  border-color: #a9b4ad;
+  border-radius: 4px;
+  font-size: 12px;
+}

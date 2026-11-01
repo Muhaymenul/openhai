@@ -1,0 +1,743 @@
+import { expect, test, type Page } from "@playwright/test";
+import { restoreMayaSession } from "./support/member-session";
+import {
+  enterHousehold,
+  finishHouseholdAdmission,
+  selectHouseholdProfile,
+} from "./support/household-access";
+
+const password = "browser-owner-password-phrase";
+let pdfRestore:
+  | {
+      path: string;
+      canvasPath: string;
+      pagePath: string;
+      bytes: Buffer;
+    }
+  | undefined;
+
+async function passGate(page: Page): Promise<void> {
+  await enterHousehold(page);
+}
+
+async function loginAsMaya(page: Page): Promise<void> {
+  await restoreMayaSession(page);
+  await expect(page).toHaveURL("/");
+  await expect(page.getByText("Attention Is All You Need")).toBeVisible();
+}
+
+async function loginAsOwner(page: Page): Promise<void> {
+  await enterHousehold(page);
+  await selectHouseholdProfile(page, "Fixture Owner");
+  await expect(page.getByText("Attention Is All You Need")).toBeVisible();
+}
+
+async function removeProfileAsAdminIfPresent(
+  page: Page,
+  username: string,
+): Promise<void> {
+  await page.context().clearCookies();
+  await loginAsOwner(page);
+  const listed = await page.request.get("/api/v1/profiles");
+  expect(listed.ok()).toBe(true);
+  const body = (await listed.json()) as {
+    profiles: Array<{ username: string }>;
+  };
+  if (body.profiles.some((profile) => profile.username === username)) {
+    const removed = await page.request.delete(`/api/v1/profiles/${username}`, {
+      data: { confirmation: username },
+    });
+    expect(removed.ok(), await removed.text()).toBe(true);
+  }
+  await page.context().clearCookies();
+}
+
+test.describe.serial("documentation journeys and screenshots", () => {
+  test.afterEach(async ({ page }) => {
+    if (!pdfRestore) return;
+    const restore = pdfRestore;
+    const current = await page.request.head(restore.path);
+    expect(current.ok()).toBe(true);
+    const response = await page.request.put(restore.path, {
+      data: restore.bytes,
+      headers: {
+        "content-type": "application/pdf",
+        "if-match": current.headers()["etag"],
+      },
+    });
+    expect(response.ok()).toBe(true);
+    const restoredEtag = response.headers()["etag"];
+    await page.goto(restore.pagePath);
+    await expect(
+      page.getByRole("status", { name: "Canvas save status" }),
+    ).toHaveText("Saved", { timeout: 30_000 });
+    await expect
+      .poll(async () => {
+        const canvas = await page.request.get(restore.canvasPath);
+        const payload = (await canvas.json()) as {
+          document?: {
+            store?: Record<string, { meta?: { papernookPdfVersion?: string } }>;
+          };
+        };
+        return payload.document?.store?.["shape:page-1"]?.meta
+          ?.papernookPdfVersion;
+      })
+      .toBe(restoredEtag);
+    pdfRestore = undefined;
+  });
+
+  test("public gate, profile picker, and library match the documented flow", async ({
+    page,
+  }) => {
+    await page.goto("/login");
+    await expect(page.getByText("Maya")).not.toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Open your library" }),
+    ).toBeVisible();
+    await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
+    await expect(page).toHaveScreenshot(["setup", "access-gate.png"], {
+      animations: "disabled",
+      // Assertions below verify admission while the image documents the form.
+      maxDiffPixelRatio: 0.02,
+    });
+    await page
+      .locator("form")
+      .getByRole("button", { name: "Continue", exact: true })
+      .click();
+    await expect(page).toHaveURL("/login");
+    await expect(
+      page.getByRole("button", { name: "Switch to Maya" }),
+    ).toHaveCount(0);
+    await page.getByLabel("Password", { exact: true }).fill("wrong-password");
+    await page
+      .locator("form")
+      .getByRole("button", { name: "Continue", exact: true })
+      .click();
+    await expect(
+      page
+        .getByRole("alert")
+        .filter({ hasText: "The credentials could not be verified." }),
+    ).toBeVisible();
+    await page.getByLabel("Password", { exact: true }).fill(password);
+    await page
+      .locator("form")
+      .getByRole("button", { name: "Continue", exact: true })
+      .click();
+
+    await finishHouseholdAdmission(page);
+
+    const avatar = page
+      .getByRole("button", { name: "Switch to Maya" })
+      .locator("span")
+      .first();
+    await expect(avatar).toHaveCSS("border-radius", "50%");
+    const avatarImage = page
+      .getByRole("button", { name: "Switch to Maya" })
+      .locator("img");
+    await expect
+      .poll(() =>
+        avatarImage.evaluate(
+          (image) =>
+            image instanceof HTMLImageElement &&
+            image.complete &&
+            image.naturalWidth > 0,
+        ),
+      )
+      .toBe(true);
+    await expect(page).toHaveScreenshot(["setup", "profile-picker.png"], {
+      animations: "disabled",
+      maxDiffPixelRatio: 0.06,
+    });
+
+    await page.getByRole("button", { name: "Switch to Maya" }).click();
+    await expect(page).toHaveURL("/");
+    await expect(page).toHaveScreenshot(["product", "library.png"], {
+      animations: "disabled",
+      fullPage: true,
+      maxDiffPixelRatio: 0.06,
+    });
+  });
+
+  test("paper chat can be hidden persistently for a full-width reading view", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    await loginAsMaya(page);
+    await page.getByText("Attention Is All You Need").click();
+    await expect(page.getByText("Page 1 of 3")).toBeVisible();
+    const readerUrl = page.url();
+    await page
+      .getByRole("combobox", { name: "Previous conversations" })
+      .selectOption("0123456789abcdef");
+    // The chat panel loads its history over two client fetches that compete
+    // with the PDF for the dev server, and the reader's tools only enable
+    // once pdf.js has the document. Neither is a five-second promise on a
+    // two-core CI runner.
+    await expect(
+      page
+        .getByRole("paragraph")
+        .filter({ hasText: /^Why was removing recurrence such a big deal\?$/ }),
+    ).toBeVisible({ timeout: 45_000 });
+    await expect(page.getByRole("button", { name: "Highlight" })).toBeEnabled({
+      timeout: 45_000,
+    });
+    await expect(page).toHaveScreenshot(["product", "paper-and-chat.png"], {
+      animations: "disabled",
+      maxDiffPixelRatio: 0.06,
+    });
+
+    await page.getByRole("button", { name: "Focus reading" }).click();
+    await expect(
+      page.getByText("Why attention replaced recurrence"),
+    ).not.toBeVisible();
+    // Focus reading hides the page header too — text only.
+    await expect(
+      page.getByRole("link", { name: "Canvas", exact: true }),
+    ).not.toBeVisible();
+    await expect(page.getByRole("button", { name: "Show chat" })).toBeVisible();
+    await expect(page).toHaveScreenshot(["product", "paper-focus.png"], {
+      animations: "disabled",
+      maxDiffPixelRatio: 0.06,
+    });
+    await page
+      .getByRole("button", { name: "Paper fullscreen", exact: true })
+      .click();
+    await expect(
+      page.getByRole("button", { name: "Exit paper fullscreen" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    const fullscreenReader = page.getByLabel("Attention Is All You Need");
+    await expect
+      .poll(async () => (await fullscreenReader.boundingBox())?.height ?? 0)
+      .toBe(page.viewportSize()!.height);
+    await page.keyboard.press("Escape");
+    await expect(
+      page.getByRole("button", { name: "Paper fullscreen", exact: true }),
+    ).toHaveAttribute("aria-pressed", "false");
+
+    // Header and chat come back independently.
+    await page.getByRole("button", { name: "Show chat" }).click();
+    await page.getByRole("button", { name: "Show header" }).click();
+    await expect(
+      page.getByRole("link", { name: "Canvas", exact: true }),
+    ).toBeVisible();
+
+    await page.goto(`${readerUrl}/canvas`);
+    await expect(page).toHaveURL(`${readerUrl}/canvas`);
+    await expect(
+      page.getByRole("link", { name: "Canvas", exact: true }),
+    ).toHaveAttribute("aria-current", "page");
+    await expect(
+      page.getByText("Paste screenshots, links, or videos"),
+    ).toBeVisible();
+    const saveStatus = page.getByRole("status", {
+      name: "Canvas save status",
+    });
+    await expect(saveStatus).toHaveText("Saved", { timeout: 30_000 });
+    const importedPage = page.locator('img[src*="/canvas/assets/"]').first();
+    await expect(importedPage).toBeVisible();
+    await expect
+      .poll(() =>
+        importedPage.evaluate((image) =>
+          image instanceof HTMLImageElement ? image.naturalWidth : 0,
+        ),
+      )
+      .toBeGreaterThan(0);
+    await expect(page).toHaveScreenshot(["product", "canvas.png"], {
+      animations: "disabled",
+      maxDiffPixelRatio: 0.06,
+    });
+    const board = page.locator(".tl-canvas").first();
+    const boardBox = await board.boundingBox();
+    expect(boardBox).not.toBeNull();
+    await expect
+      .poll(() =>
+        page
+          .locator("[data-chat-visible]")
+          .evaluate(
+            (workspace) => workspace.scrollWidth <= workspace.clientWidth,
+          ),
+      )
+      .toBe(true);
+    await page.mouse.click(
+      boardBox!.x + boardBox!.width / 2,
+      boardBox!.y + boardBox!.height / 2,
+    );
+    await page.keyboard.press("Control+.");
+    await expect(
+      page.getByRole("button", { name: "Show canvas tools" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Show canvas tools" }).click();
+    await expect(
+      page.getByRole("button", { name: "Show canvas tools" }),
+    ).not.toBeVisible();
+    await expect(page.locator(".tlui-toolbar").first()).toBeVisible();
+    await page.keyboard.press("d");
+    await page.mouse.move(boardBox!.x + 260, boardBox!.y + 220);
+    await page.mouse.down();
+    await page.mouse.move(boardBox!.x + 360, boardBox!.y + 300, { steps: 4 });
+    await page.mouse.up();
+    await expect(saveStatus).toHaveText("Unsaved changes");
+    await expect(saveStatus).toHaveText("Saved");
+    const canvasState = await page.request.get(
+      `/api/v1/papers/machine-learning/attention-is-all-you-need/canvas`,
+    );
+    expect(canvasState.ok()).toBe(true);
+    const canvasDocument = JSON.stringify(await canvasState.json());
+    expect(canvasDocument).toContain('"shape:page-1"');
+    expect(canvasDocument).toContain('"papernookPdfVersion"');
+    expect(canvasDocument).toContain("/canvas/assets/");
+    const pdfPath =
+      "/api/v1/papers/machine-learning/attention-is-all-you-need/pdf";
+    const originalPdf = await page.request.get(pdfPath);
+    expect(originalPdf.ok()).toBe(true);
+    pdfRestore = {
+      path: pdfPath,
+      canvasPath:
+        "/api/v1/papers/machine-learning/attention-is-all-you-need/canvas",
+      pagePath: "/paper/machine-learning/attention-is-all-you-need/canvas",
+      bytes: await originalPdf.body(),
+    };
+    const beforeAnnotation = await page.request.head(pdfPath);
+    const beforeAnnotationEtag = beforeAnnotation.headers()["etag"];
+    await page.getByRole("button", { name: "Annotate PDF" }).click();
+    const annotator = page.getByRole("region", {
+      name: "Annotate Attention Is All You Need",
+    });
+    await expect(annotator).toBeVisible();
+    await page
+      .getByRole("combobox", { name: "Color theme" })
+      .selectOption("dark");
+    await expect(
+      page.getByText(
+        "Highlights, text, and ink save to Reader and every device.",
+      ),
+    ).toBeVisible();
+    await expect(
+      annotator.getByRole("button", { name: "Highlight" }),
+    ).toBeEnabled();
+    await annotator.getByRole("button", { name: "Highlight" }).click();
+    const highlightText = annotator
+      .locator(".textLayer span")
+      .filter({ hasText: "dominant sequence transduction" })
+      .first();
+    await expect(highlightText).toBeVisible();
+    await highlightText.scrollIntoViewIfNeeded();
+    await expect(highlightText.locator("xpath=..")).toHaveClass(/highlighting/);
+    await highlightText.selectText();
+    await highlightText.dispatchEvent("pointerup", {
+      button: 0,
+      pointerType: "mouse",
+    });
+    await expect(annotator.locator(".highlightEditor").first()).toBeVisible();
+    await annotator.getByRole("button", { name: "Text" }).click();
+    const annotationPage = annotator.locator(".pdfViewer .page").first();
+    const annotationPageBox = await annotationPage.boundingBox();
+    expect(annotationPageBox).not.toBeNull();
+    await page.mouse.click(
+      annotationPageBox!.x + annotationPageBox!.width * 0.3,
+      annotationPageBox!.y + 180,
+    );
+    await expect(
+      annotator.locator(".freeTextEditor .internal").first(),
+    ).toBeVisible();
+    await page.keyboard.type("Canvas synced note");
+    await annotator.getByRole("button", { name: "Select" }).click();
+    await expect(
+      annotator.getByRole("button", { name: "Save annotations in PDF" }),
+    ).toBeEnabled();
+    await annotator
+      .getByRole("button", { name: "Save annotations in PDF" })
+      .click();
+    await expect(annotator.getByText("Saved", { exact: true })).toBeVisible();
+    const afterAnnotation = await page.request.head(pdfPath);
+    const afterAnnotationEtag = afterAnnotation.headers()["etag"];
+    expect(afterAnnotationEtag).toBeTruthy();
+    expect(afterAnnotationEtag).not.toBe(beforeAnnotationEtag);
+    await expect(
+      annotator.getByRole("button", { name: "Close annotator" }),
+    ).toBeVisible();
+    await annotator.getByRole("button", { name: "Close annotator" }).click();
+    await expect(annotator).not.toBeVisible();
+    await expect(saveStatus).toHaveText("Saved", { timeout: 30_000 });
+    await expect
+      .poll(async () => {
+        const refreshedCanvas = await page.request.get(
+          "/api/v1/papers/machine-learning/attention-is-all-you-need/canvas",
+        );
+        const payload = (await refreshedCanvas.json()) as {
+          document?: {
+            store?: Record<string, { meta?: { papernookPdfVersion?: string } }>;
+          };
+        };
+        return payload.document?.store?.["shape:page-1"]?.meta
+          ?.papernookPdfVersion;
+      })
+      .toBe(afterAnnotationEtag);
+    await page.mouse.move(boardBox!.x + 420, boardBox!.y + 240);
+    await page.mouse.down();
+    await page.mouse.move(boardBox!.x + 500, boardBox!.y + 320, { steps: 4 });
+    await page.mouse.up();
+    await expect(saveStatus).toHaveText("Unsaved changes");
+    await expect(saveStatus).toHaveText("Saved");
+    await page.locator(".tl-container").evaluate((container) => {
+      const gate = document.createElement("div");
+      gate.dataset.testid = "tl-license-expired";
+      gate.hidden = true;
+      container.append(gate);
+    });
+    await expect(
+      page.getByText("This tldraw key was rejected", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Explain selection" }),
+    ).not.toBeVisible();
+    await expect(
+      page.getByRole("alert").filter({
+        hasText: "This tldraw key was rejected",
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Open Canvas settings" }),
+    ).toHaveAttribute("href", "/settings#canvas");
+    await page.getByRole("link", { name: "Reader", exact: true }).click();
+    await expect(page).toHaveURL(readerUrl);
+    await expect(page.getByText("Canvas synced note")).toBeVisible();
+  });
+
+  test("manual theme choice persists across navigation and reload", async ({
+    page,
+  }) => {
+    await loginAsMaya(page);
+    const html = page.locator("html");
+    const initial = await html.getAttribute("data-theme");
+    expect(initial === "light" || initial === "dark").toBe(true);
+    const target = initial === "dark" ? "light" : "dark";
+    await page
+      .getByRole("combobox", { name: "Color theme" })
+      .selectOption(target);
+    await expect(html).toHaveAttribute("data-theme", target);
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", target);
+  });
+
+  test("sharing, graph, app access, and device setup are visible before sending", async ({
+    page,
+  }, testInfo) => {
+    await loginAsOwner(page);
+    await page.getByText("Attention Is All You Need").click();
+    await page.getByRole("button", { name: "Share", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: "Create a view-only reading" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("checkbox", { name: /Include conversation snapshots/ }),
+    ).not.toBeChecked();
+    await expect(
+      page.getByRole("button", { name: "Create link & copy" }),
+    ).toBeEnabled();
+    await expect(page).toHaveScreenshot(["product", "share-reading.png"], {
+      animations: "disabled",
+      maxDiffPixelRatio: 0.06,
+    });
+
+    await page.goto("/graph");
+    await expect(
+      page.getByRole("heading", { name: "How your papers relate" }),
+    ).toBeVisible();
+    await expect(page).toHaveScreenshot(["product", "relationship-graph.png"], {
+      animations: "disabled",
+      maxDiffPixelRatio: 0.06,
+    });
+
+    await page.goto("/settings");
+    await page.route("**/api/v1/settings/canvas", async (route) => {
+      if (route.request().method() !== "GET") {
+        await route.fallback();
+        return;
+      }
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          configured: true,
+          source: "file",
+          admin: true,
+          requiredForThisOrigin: true,
+          licenseKey: "test-key",
+        }),
+      });
+    });
+    await page.reload();
+    await page.getByRole("button", { name: "Test configured key" }).click();
+    const licenseProbe = page.locator(".tl-container").last();
+    await licenseProbe.waitFor({ state: "attached" });
+    await licenseProbe.evaluate((container) => {
+      const gate = document.createElement("div");
+      gate.dataset.testid = "tl-license-expired";
+      gate.hidden = true;
+      container.append(gate);
+    });
+    await expect(
+      page.getByText("Rejected. Replace the key or check its allowed domain.", {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await page.unroute("**/api/v1/settings/canvas");
+    await page.reload();
+    const setupWizard = page.getByRole("link", { name: "Review setup" });
+    await expect(setupWizard).toHaveAttribute("href", "/welcome");
+    await setupWizard.click();
+    await expect(
+      page.getByRole("heading", { name: "Welcome, Fixture Owner" }),
+    ).toBeVisible();
+    await page.goto("/settings");
+    await expect(page).toHaveURL("/settings");
+    await expect(
+      page.getByRole("listitem").filter({ hasText: "Fixture Owner" }),
+    ).toContainText("(admin)");
+    const household = page
+      .getByRole("heading", { name: "Share access" })
+      .locator("..");
+    await expect(household).toContainText("shared password");
+    const device = page
+      .getByRole("heading", { name: "Connect a phone or tablet" })
+      .locator("..");
+    await expect(device.getByText("Same Wi-Fi", { exact: true })).toBeVisible();
+    await expect(
+      device.getByText("sudo tailscale up", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      device.getByText("sudo tailscale serve 3000", { exact: true }),
+    ).toBeVisible();
+    await device.evaluate((element) => {
+      element.style.boxSizing = "border-box";
+      element.style.height = "1220px";
+    });
+    await expect(device).toHaveScreenshot(["setup", "connect-device.png"], {
+      animations: "disabled",
+      // Chromium text rasterization varies slightly after the dynamic panel
+      // settles; semantic assertions above protect the actual instructions.
+      maxDiffPixelRatio: 0.06,
+    });
+
+    const memberName =
+      testInfo.retry === 0 ? "Casey" : `Casey Retry ${testInfo.retry}`;
+    const created = await page.request.post("/api/v1/profiles", {
+      data: {
+        displayName: memberName,
+        avatarSlug: "frog",
+      },
+    });
+    expect(created.ok(), await created.text()).toBe(true);
+    await page.reload();
+    page.on("dialog", (dialog) => dialog.accept());
+    const casey = page.getByRole("listitem").filter({ hasText: memberName });
+    await casey.getByRole("button", { name: "Remove completely" }).click();
+    await expect(
+      casey.getByRole("button", { name: "Remove completely" }),
+    ).toHaveCount(0, { timeout: 30_000 });
+  });
+
+  test("a friend adds their own profile past the gate", async ({ page }) => {
+    await removeProfileAsAdminIfPresent(page, "jordan");
+    await passGate(page);
+    await page.getByRole("button", { name: "Add profile" }).click();
+    await page.getByLabel("Name").fill("Jordan");
+    await page.getByRole("radio", { name: "Toucan" }).click();
+    await page.getByRole("button", { name: "Create" }).click();
+
+    await expect(
+      page.getByRole("heading", { name: "Welcome, Jordan" }),
+    ).toBeVisible();
+    await expect(page.getByText("works now").first()).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(
+      page.getByText(
+        "Canvas works on this local address without a key. A key is required after production deployment.",
+      ),
+    ).toBeVisible();
+    await page.setViewportSize({ width: 1280, height: 1116 });
+    await expect(page).toHaveScreenshot(["setup", "welcome.png"], {
+      animations: "disabled",
+      maxDiffPixelRatio: 0.06,
+    });
+    await page.getByRole("button", { name: "Open my library" }).click();
+    await page.goto("/settings");
+    await page
+      .getByRole("button", { name: "Delete my profile and data" })
+      .click();
+    await page.getByLabel(/Type jordan to confirm/).fill("jordan");
+    await page.getByRole("button", { name: "Delete permanently" }).click();
+    await expect(page).toHaveURL("/login");
+    await expect(
+      page.getByRole("heading", { name: "Open your library" }),
+    ).toBeVisible();
+    await passGate(page);
+    await expect(page.getByText("Jordan")).not.toBeVisible();
+  });
+
+  test("tablet screenshots preserve the library and paper reading hierarchy", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 834, height: 1112 });
+    await page.route(
+      "**/api/v1/papers/machine-learning/attention-is-all-you-need/position",
+      async (route) => {
+        if (route.request().method() !== "GET") return route.continue();
+        await route.fulfill({ json: { position: null } });
+      },
+    );
+    await loginAsMaya(page);
+    await expect(page).toHaveScreenshot(["product", "library-tablet.png"], {
+      animations: "disabled",
+      fullPage: true,
+      maxDiffPixelRatio: 0.06,
+    });
+    await page.getByText("Attention Is All You Need").click();
+    await expect(page.getByText("Page 1 of 3")).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Reading" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(
+      page
+        .getByRole("paragraph")
+        .filter({ hasText: /^Why was removing recurrence such a big deal\?$/ }),
+    ).not.toBeVisible();
+    await expect(page.getByRole("button", { name: "Highlight" })).toBeEnabled();
+    const renderedPage = page
+      .getByRole("tabpanel", { name: "Reading" })
+      .locator(".page canvas")
+      .first();
+    await expect(renderedPage).toBeVisible();
+    await expect
+      .poll(async () => {
+        const box = await renderedPage.boundingBox();
+        return box ? Math.min(box.width, box.height) : 0;
+      })
+      .toBeGreaterThan(100);
+    await expect(page).toHaveScreenshot(["product", "paper-tablet.png"], {
+      animations: "disabled",
+      fullPage: true,
+      maxDiffPixelRatio: 0.06,
+    });
+
+    const pageBox = await renderedPage.boundingBox();
+    expect(pageBox).not.toBeNull();
+    await renderedPage.dispatchEvent("pointerdown", {
+      bubbles: true,
+      clientX: pageBox!.x + pageBox!.width / 2,
+      clientY: pageBox!.y + pageBox!.height / 2,
+      pointerId: 7,
+      pointerType: "pen",
+    });
+    await expect(page.getByRole("button", { name: "Draw" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(
+      page.getByText(/touch reserved for pinch zoom/i),
+    ).toBeVisible();
+
+    const cdp = await page.context().newCDPSession(page);
+    const centerX = pageBox!.x + pageBox!.width / 2;
+    const centerY = pageBox!.y + Math.min(pageBox!.height / 2, 320);
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x: centerX, y: centerY }],
+    });
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [{ x: centerX + 24, y: centerY + 16 }],
+    });
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchEnd",
+      touchPoints: [],
+    });
+    await expect(
+      page.getByRole("button", { name: "Save annotations in PDF" }),
+    ).toBeDisabled();
+
+    const initialZoom = await page
+      .locator("span")
+      .filter({ hasText: /^\d+%$/ })
+      .textContent();
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [
+        { x: centerX - 45, y: centerY },
+        { x: centerX + 45, y: centerY },
+      ],
+    });
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [
+        { x: centerX - 75, y: centerY },
+        { x: centerX + 75, y: centerY },
+      ],
+    });
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchEnd",
+      touchPoints: [],
+    });
+    await expect
+      .poll(() =>
+        page
+          .locator("span")
+          .filter({ hasText: /^\d+%$/ })
+          .textContent(),
+      )
+      .not.toBe(initialZoom);
+
+    await page.getByRole("tab", { name: "Chat" }).click();
+    await page
+      .getByRole("combobox", { name: "Previous conversations" })
+      .selectOption("0123456789abcdef");
+    await expect(
+      page
+        .getByRole("paragraph")
+        .filter({ hasText: /^Why was removing recurrence such a big deal\?$/ }),
+    ).toBeVisible();
+    await page.getByRole("tab", { name: "Chat" }).press("ArrowLeft");
+    await expect(page.getByRole("tab", { name: "Reading" })).toBeFocused();
+  });
+});
+
+test("a late desktop reading position restores the page without changing tablet zoom", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 834, height: 1112 });
+  const positionEndpoint =
+    "**/api/v1/papers/machine-learning/attention-is-all-you-need/position";
+  const { promise: readerReady, resolve: releasePosition } =
+    Promise.withResolvers<void>();
+  await page.route(positionEndpoint, async (route) => {
+    if (route.request().method() !== "GET") return route.continue();
+    await readerReady;
+    await route.fulfill({
+      json: {
+        position: {
+          page: 2,
+          scale: 2,
+          viewport: 2000,
+          updatedAt: Date.now(),
+        },
+      },
+    });
+  });
+  try {
+    await loginAsMaya(page);
+    await page.getByText("Attention Is All You Need").click();
+    await expect(page.getByText("Page 1 of 3")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Highlight" })).toBeEnabled();
+    await expect(page.locator(".page canvas").first()).toBeVisible();
+    const zoom = page.locator("span").filter({ hasText: /^\d+%$/ });
+    const fittedZoom = await zoom.innerText();
+    releasePosition();
+    await expect(page.getByText("Page 2 of 3")).toBeVisible();
+    await expect(zoom).toHaveText(fittedZoom);
+  } finally {
+    releasePosition();
+    await page.unrouteAll({ behavior: "wait" });
+  }
+});

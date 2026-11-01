@@ -1,0 +1,164 @@
+# papernook stack: the app + the rclone WebDAV sidecar.
+# The sidecar serves ONLY /data/papers (annotatable PDFs + rendered exercise
+# PDFs). data/library (chats, crops, canvases, inbox) is never exposed.
+#
+# Required env (put them in .env next to this file):
+#   WEBDAV_USER / WEBDAV_PASS      credentials for PDF Expert
+# Optional:
+#   PAPERNOOK_WEBDAV_URL           public WebDAV HTTPS endpoint
+#   APP_HOST / WEBDAV_HOST         both default to 127.0.0.1. Caddy terminates
+#                                  TLS in front (see Caddyfile.example). Set
+#                                  either to 0.0.0.0 only on a network you
+#                                  trust: WebDAV speaks plaintext HTTP, so its
+#                                  password is readable on the wire.
+#   TRUSTED_PROXY_HOPS             proxies in front; 0 when exposed directly
+#   CLAUDE_CODE_SSH_HOST / CODEX_SSH_HOST
+#   CLAUDE_AUTH_DIR / CODEX_AUTH_DIR override the Compose user's CLI homes
+#   WEB_SEARCH_BASE_URL            custom SearXNG endpoint (bundled by default)
+#   SESSION_SECRET                 pin sessions across container rebuilds
+#   PAPERNOOK_IMAGE / PAPERNOOK_IMAGE_TAG
+#                                  run a prebuilt image (e.g.
+#                                  ghcr.io/affromero/papernook) instead of
+#                                  building this checkout
+
+x-logging: &bounded-logging
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "3"
+
+services:
+  app:
+    logging: *bounded-logging
+    build: .
+    # Built from this checkout by default, which is what a self-host install
+    # does. Set PAPERNOOK_IMAGE (and the tag) to run a prebuilt image
+    # instead — `papernook update` then pulls rather than builds, so a
+    # server never spends disk on build cache and intermediate layers.
+    image: ${PAPERNOOK_IMAGE:-papernook-app}:${PAPERNOOK_IMAGE_TAG:-local}
+    restart: unless-stopped
+    init: true
+    depends_on:
+      credential-sync:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "${APP_HOST:-127.0.0.1}:${APP_PORT:-3000}:3000"
+    env_file: .env
+    environment:
+      HOSTNAME: 0.0.0.0
+      PAPERNOOK_VERSION: ${PAPERNOOK_VERSION:-dev}
+      WEB_SEARCH_BASE_URL: ${WEB_SEARCH_BASE_URL:-http://search:8080}
+      PAPERNOOK_SSH_KEY_PATH: /home/node/.ssh/id_papernook
+      PAPERNOOK_SSH_KNOWN_HOSTS_PATH: /home/node/.ssh/known_hosts
+      PAPERNOOK_CREDENTIAL_SYNC_DIR: /run/cli-credentials
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data:/data
+      # SSH mode mounts one explicit key and known_hosts file, never ~/.ssh.
+      - ${SSH_KEY_FILE:-/dev/null}:/run/host-auth/ssh-key:ro
+      - ${SSH_KNOWN_HOSTS_FILE:-/dev/null}:/run/host-auth/known-hosts:ro
+      # A networkless sidecar refreshes this volume after host CLI login/logout.
+      - cli-credentials:/run/cli-credentials
+      # The CLIs rotate their refresh token in place and the previous one is
+      # retired server-side, so the rotated file has to outlive the container —
+      # and be the SAME file every other app on this host uses, or two copies of
+      # one login silently kill each other. Hence external, host-wide volumes.
+      - agent-claude-home:/home/node/.claude
+      - agent-codex-home:/home/node/.codex
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/v1/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  credential-sync:
+    logging: *bounded-logging
+    image: alpine:3.22@sha256:14358309a308569c32bdc37e2e0e9694be33a9d99e68afb0f5ff33cc1f695dce
+    restart: unless-stopped
+    network_mode: none
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      # Host CLI files are normally mode 600 and may use a different UID.
+      - DAC_READ_SEARCH
+    volumes:
+      - ${CODEX_AUTH_DIR:-/dev/null}:/host-codex:ro
+      - ${CLAUDE_AUTH_DIR:-/dev/null}:/host-claude:ro
+      - cli-credentials:/credential-sync
+      - ./scripts/agent/sync-cli-credentials.sh:/usr/local/bin/sync-cli-credentials:ro
+    command: ["/bin/sh", "/usr/local/bin/sync-cli-credentials"]
+    healthcheck:
+      test: ["CMD", "test", "-f", "/credential-sync/ready"]
+      interval: 2s
+      timeout: 1s
+      retries: 10
+
+  # Internal metasearch backend for local-model web_search tool calls. It is
+  # reachable from the host only on loopback and never receives server files.
+  search:
+    logging: *bounded-logging
+    image: searxng/searxng:latest@sha256:7a39e9e2610fb6f332393d0f1c69534d5f1fd4e85cb4b204cd1b1768195b8ee9
+    restart: unless-stopped
+    environment:
+      SEARXNG_SECRET: ${SEARXNG_SECRET:-${SESSION_SECRET:-papernook-internal-only}}
+    ports:
+      - "127.0.0.1:8888:8080"
+    volumes:
+      - ./deploy/searxng/settings.yml:/etc/searxng/settings.yml:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  webdav:
+    logging: *bounded-logging
+    image: rclone/rclone:1.74.4@sha256:c61954aaa32328a5486715dd063a81c7879f5195ad3505cd362deddd509dc4a1
+    restart: unless-stopped
+    command:
+      [
+        "serve",
+        "webdav",
+        "/data/papers",
+        "--addr",
+        ":8080",
+        "--user",
+        "${WEBDAV_USER:?WEBDAV_USER is required}",
+        "--pass",
+        "${WEBDAV_PASS:?WEBDAV_PASS is required}",
+        "--vfs-cache-mode",
+        "writes",
+      ]
+    ports:
+      - "${WEBDAV_HOST:-127.0.0.1}:${WEBDAV_PORT:-8080}:8080"
+    volumes:
+      - ./data/papers:/data/papers
+    healthcheck:
+      test: ["CMD", "rclone", "version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  cli-credentials:
+  # Shared with every other app on this host that drives the same CLI login.
+  # Created by the deploy/install flow; `docker volume create agent-claude-home
+  # agent-codex-home` if you are bringing this up by hand.
+  agent-claude-home:
+    external: true
+  agent-codex-home:
+    external: true

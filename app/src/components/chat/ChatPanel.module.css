@@ -1,0 +1,418 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 420px;
+  border: 1px solid rgba(127, 127, 127, 0.25);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  border-bottom: 1px solid rgba(127, 127, 127, 0.2);
+}
+
+.chatSelect {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  border-radius: 8px;
+  border: 1px solid rgba(127, 127, 127, 0.3);
+  background: transparent;
+  color: inherit;
+  padding: 0 0.5rem;
+}
+
+.newBtn {
+  min-height: 44px;
+  padding: 0 0.9rem;
+  border-radius: 8px;
+  border: 1px solid rgba(63, 79, 176, 0.5);
+  background: rgba(63, 79, 176, 0.1);
+  color: inherit;
+  font-weight: 600;
+}
+
+.deleteChatBtn {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  border: 1px solid rgba(164, 46, 43, 0.45);
+  border-radius: 8px;
+  background: rgba(164, 46, 43, 0.08);
+  color: #a42e2b;
+}
+
+.renameChatBtn {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  border: 1px solid rgba(127, 127, 127, 0.35);
+  border-radius: 8px;
+  background: rgba(127, 127, 127, 0.08);
+  color: inherit;
+}
+
+.renameChatBtn:hover:not(:disabled) {
+  background: rgba(127, 127, 127, 0.15);
+}
+
+.deleteChatBtn:hover:not(:disabled) {
+  background: rgba(164, 46, 43, 0.15);
+}
+
+.deleteChatBtn:disabled,
+.renameChatBtn:disabled,
+.newBtn:disabled,
+.chatSelect:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.userMsg,
+.assistantMsg {
+  position: relative;
+  max-width: 88%;
+  border-radius: 12px;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.93rem;
+  line-height: 1.5;
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s ease;
+}
+
+.deleteBtn {
+  position: absolute;
+  top: -0.45rem;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 999px;
+  border: 1px solid rgba(127, 127, 127, 0.4);
+  background: var(--background, #fff);
+  color: inherit;
+  font-size: 0.9rem;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.userMsg .deleteBtn {
+  left: -0.45rem;
+}
+
+.assistantMsg .deleteBtn {
+  right: -0.45rem;
+}
+
+.userMsg:hover .deleteBtn,
+.assistantMsg:hover .deleteBtn,
+.deleteBtn:focus-visible {
+  opacity: 1;
+}
+
+/* No hover on touch: keep the control reachable, just subtle. */
+@media (hover: none) {
+  .deleteBtn {
+    opacity: 0.45;
+  }
+}
+
+.vanish {
+  opacity: 0;
+  transform: scale(0.7);
+}
+
+.userMsg {
+  align-self: flex-end;
+  background: rgba(63, 79, 176, 0.14);
+}
+
+.assistantMsg {
+  align-self: flex-start;
+  background: rgba(127, 127, 127, 0.1);
+}
+
+/* Assistant bubbles render markdown; only raw user text keeps pre-wrap. */
+.userMsg p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.assistantMsg > p {
+  margin: 0;
+}
+
+.typingIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  min-height: 1.2rem;
+  padding: 0 0.1rem;
+  color: rgba(127, 127, 127, 0.9);
+}
+
+.typingIndicator > span {
+  width: 0.36rem;
+  height: 0.36rem;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.38;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .typingIndicator > span {
+    animation: typingPulse 1.15s ease-in-out infinite;
+  }
+
+  .typingIndicator > span:nth-child(2) {
+    animation-delay: 0.14s;
+  }
+
+  .typingIndicator > span:nth-child(3) {
+    animation-delay: 0.28s;
+  }
+}
+
+@keyframes typingPulse {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.38;
+  }
+
+  30% {
+    transform: translateY(-0.2rem);
+    opacity: 1;
+  }
+}
+
+.msgImage {
+  max-width: 220px;
+  border-radius: 8px;
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+.empty {
+  opacity: 0.6;
+  text-align: center;
+  margin-top: 2rem;
+  font-size: 0.9rem;
+}
+
+.error {
+  color: #a42e2b;
+  padding: 0 0.9rem;
+  font-size: 0.85rem;
+}
+
+.pastedRow {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0.4rem 0.9rem;
+}
+
+.pastedThumb {
+  height: 44px;
+  border-radius: 6px;
+}
+
+.inputRow {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  border-top: 1px solid rgba(127, 127, 127, 0.2);
+}
+
+.input {
+  flex: 1;
+  resize: none;
+  border-radius: 10px;
+  border: 1px solid rgba(127, 127, 127, 0.3);
+  background: transparent;
+  color: inherit;
+  padding: 0.6rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.sendBtn {
+  min-height: 44px;
+  min-width: 72px;
+  border-radius: 10px;
+  border: 0;
+  background: #3f4fb0;
+  color: #fff;
+  font-weight: 600;
+}
+
+.sendBtn:disabled {
+  opacity: 0.5;
+}
+
+.historyDialog {
+  width: min(560px, calc(100vw - 2rem));
+  max-height: min(680px, calc(100vh - 2rem));
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(127, 127, 127, 0.42);
+  border-radius: 12px;
+  color: inherit;
+  background: var(--background, #fff);
+  box-shadow: 0 24px 80px rgba(10, 14, 28, 0.34);
+}
+
+.historyDialog::backdrop {
+  background: rgba(10, 14, 28, 0.54);
+  backdrop-filter: blur(2px);
+}
+
+.historyDialogInner {
+  display: flex;
+  flex-direction: column;
+  max-height: inherit;
+  padding: 1rem;
+}
+
+.historyHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.historyHeader h2 {
+  margin: 0.15rem 0 0;
+  font-size: 1.05rem;
+}
+
+.historyShortcut {
+  margin: 0;
+  color: #3f4fb0;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.historyClose {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.historySearch {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid rgba(63, 79, 176, 0.5);
+  border-radius: 9px;
+  background: transparent;
+  color: inherit;
+  padding: 0 0.75rem;
+  font: inherit;
+}
+
+.historyResults {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-height: 84px;
+  max-height: min(390px, 50vh);
+  margin-top: 0.7rem;
+  overflow-y: auto;
+}
+
+.historyResult {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: rgba(127, 127, 127, 0.08);
+  color: inherit;
+  font: inherit;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.historyResultSelected {
+  border-color: rgba(63, 79, 176, 0.56);
+  background: rgba(63, 79, 176, 0.14);
+}
+
+.historyEmpty {
+  margin: auto;
+  padding: 1rem;
+  opacity: 0.62;
+  font-size: 0.86rem;
+  text-align: center;
+}
+
+.historyHint {
+  margin: 0.7rem 0 0;
+  opacity: 0.58;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.68rem;
+  text-align: center;
+}
+
+@media (max-width: 560px) {
+  .historyDialog {
+    width: calc(100vw - 1rem);
+    max-height: calc(100vh - 1rem);
+  }
+
+  .historyDialogInner {
+    padding: 0.8rem;
+  }
+}
+
+/* "Save as note" composes .deleteBtn and sits beside the × on finished
+   assistant answers. */
+.assistantMsg .noteBtn {
+  right: 1.15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.noteBtn:disabled {
+  cursor: not-allowed;
+  color: rgba(127, 127, 127, 0.7);
+}
+
+.noteBtn svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}

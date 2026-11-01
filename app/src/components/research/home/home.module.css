@@ -1,0 +1,272 @@
+.home {
+  --home-gutter: clamp(20px, 3vw, 48px);
+  --home-paper: #fff;
+  --home-ink: #25272b;
+  --home-soft: #f6f5f2;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100dvh;
+  min-height: 560px;
+  background: var(--home-paper);
+  color: var(--home-ink);
+  font-family: var(--font-research-serif, "Times New Roman", "STSong", serif);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+.home,
+.home * {
+  box-sizing: border-box;
+}
+.home button {
+  border: 0;
+  border-radius: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.home button:focus-visible {
+  outline: 2px solid #4d5968;
+  outline-offset: -4px;
+}
+.header {
+  flex: 0 0 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 var(--home-gutter);
+  background: var(--home-paper);
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+  font-size: 25px;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+.brand img {
+  display: block;
+  width: 40px;
+  height: 44px;
+  object-fit: contain;
+  background: transparent;
+  flex-shrink: 0;
+}
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.header .search {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: transparent;
+}
+.search:hover {
+  background: var(--home-soft);
+}
+.header .upload {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 18px;
+  background: var(--home-ink);
+  color: var(--home-paper);
+  font-size: 15px;
+  white-space: nowrap;
+}
+.header .upload:hover {
+  background: #41444a;
+}
+.hero {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  margin: 0;
+}
+.content {
+  flex: 0 0 92px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px var(--home-gutter);
+  background: var(--home-paper);
+}
+.title {
+  margin: 0;
+  font-size: clamp(32px, 3.2vw, 46px);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+.title span {
+  white-space: nowrap;
+}
+.resume {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  min-height: 44px;
+  flex-shrink: 0;
+  padding: 8px 0 8px 12px;
+  background: transparent;
+  font-size: 18px !important;
+  white-space: nowrap;
+}
+.resume svg,
+.destinationArrow {
+  transition: transform 180ms ease;
+}
+.resume:hover svg {
+  transform: translateX(4px);
+}
+.destinations {
+  flex: 0 0 76px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  padding: 0 var(--home-gutter);
+  background: var(--home-soft);
+}
+.destinations button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  min-height: 52px;
+  padding: 10px 24px;
+  background: transparent;
+  white-space: nowrap;
+  font-size: 19px;
+}
+.destinations button:first-child {
+  padding-left: 0;
+}
+.destinations button:last-child {
+  padding-right: 0;
+}
+.destinations button:hover {
+  background: #efeee9;
+}
+.destinationArrow {
+  width: 23px;
+  height: 23px;
+  flex-shrink: 0;
+}
+.destinations button:hover .destinationArrow {
+  transform: translateX(5px);
+}
+@media (max-width: 900px) {
+  .title {
+    font-size: 36px;
+  }
+  .destinations button {
+    padding-inline: 16px;
+  }
+}
+@media (max-width: 600px) {
+  .home {
+    min-height: 540px;
+  }
+  .header {
+    flex-basis: 60px;
+  }
+  .brand {
+    gap: 8px;
+    font-size: 22px;
+  }
+  .brand img {
+    width: 34px;
+    height: 40px;
+  }
+  .headerActions {
+    gap: 8px;
+  }
+  .header .upload {
+    min-height: 44px;
+    padding-inline: 12px;
+    font-size: 14px;
+  }
+  .header .upload svg {
+    display: none;
+  }
+  .content {
+    flex: 0 0 110px;
+    gap: 12px;
+  }
+  .title {
+    font-size: 30px;
+    line-height: 1.3;
+  }
+  .title span {
+    display: block;
+  }
+  .resume {
+    padding-left: 0;
+    gap: 10px;
+    font-size: 15px !important;
+  }
+  .destinations {
+    flex-basis: 68px;
+    padding-inline: 20px;
+  }
+  .destinations button {
+    gap: 8px;
+    padding-inline: 10px;
+    font-size: 15px;
+  }
+  .destinationArrow {
+    width: 18px;
+    height: 18px;
+  }
+}
+@media (max-width: 350px) {
+  .header {
+    gap: 8px;
+    padding-inline: 12px;
+  }
+  .brand {
+    font-size: 20px;
+  }
+  .headerActions {
+    gap: 4px;
+  }
+  .title {
+    font-size: 27px;
+  }
+  .resume {
+    gap: 6px;
+    font-size: 14px !important;
+  }
+  .destinations {
+    padding-inline: 14px;
+  }
+  .destinations button {
+    gap: 5px;
+    font-size: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home button,
+  .resume svg,
+  .destinationArrow {
+    transition: none;
+  }
+  .resume:hover svg,
+  .destinations button:hover .destinationArrow {
+    transform: none;
+  }
+}

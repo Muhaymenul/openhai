@@ -1,0 +1,55 @@
+.sources {
+  border: 1px solid #dedfe2;
+  margin: 0 0 18px;
+  font-size: 13px;
+  background: #fff;
+}
+.sources summary {
+  padding: 10px 12px;
+  cursor: pointer;
+  color: #505862;
+}
+.sources summary strong {
+  margin-left: 10px;
+  font-weight: 600;
+  color: #1d252e;
+}
+.options {
+  padding: 8px 12px 12px;
+  border-top: 1px solid #eeeeef;
+}
+.options label {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 8px 0;
+  cursor: pointer;
+}
+.options input {
+  margin-top: 5px;
+  accent-color: #20252d;
+}
+.options span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+}
+.options small {
+  display: block;
+  color: #777f88;
+  font-size: 11px;
+}
+.options p {
+  color: #777f88;
+  font-size: 12px;
+  line-height: 1.7;
+  margin-top: 10px;
+}
+.options button {
+  margin-top: 10px;
+  font: inherit;
+  background: #fff;
+  border: 1px solid #ccd1d8;
+  padding: 5px 10px;
+  cursor: pointer;
+}

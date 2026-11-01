@@ -1,0 +1,162 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth/session";
+import { crossSiteMutation } from "@/lib/auth/request-security";
+import { clientIp } from "@/lib/auth/request-security";
+import { consumeRequestLimit, publicRequestLimit } from "@/lib/auth/rate-limit";
+export { publicRequestLimit } from "@/lib/auth/rate-limit";
+
+/**
+ * Gate everything behind a profile session except: the login/picker page, the
+ * session + profile APIs it needs, static assets, and /add (which carries its
+ * own per-profile capture token and is validated in the route).
+ */
+
+const PUBLIC_PATHS = new Set([
+  "/login",
+  "/api/v1/session",
+  "/api/v1/profiles",
+  "/api/v1/health",
+]);
+
+function contentSecurityPolicy(nonce: string): string {
+  return [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "connect-src 'self' ws: wss:",
+    "font-src 'self' data:",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "img-src 'self' data: blob: https:",
+    "media-src 'self' blob:",
+    "object-src 'none'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${
+      process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""
+    }`,
+    "style-src 'self' 'unsafe-inline'",
+    "worker-src 'self' blob:",
+  ].join("; ");
+}
+
+function secureResponse(response: NextResponse, csp: string): NextResponse {
+  response.headers.set("Content-Security-Policy", csp);
+  return response;
+}
+
+function continueRequest(request: NextRequest, csp: string): NextResponse {
+  const requestHeaders = new Headers(request.headers);
+  const nonce = /'nonce-([^']+)'/.exec(csp)?.[1];
+  if (nonce) requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("Content-Security-Policy", csp);
+  return secureResponse(
+    NextResponse.next({ request: { headers: requestHeaders } }),
+    csp,
+  );
+}
+
+export const config = {
+  matcher: [
+    "/((?!api/v1/shares/[^/]+/[^/]+/[^/]+/exchange/?$|_next/|avatars/|vendor/|offline/|favicon\\.ico|icon\\.svg|apple-icon\\.png|logo\\.(?:svg|png)|manifest\\.webmanifest|sw\\.js).*)",
+  ],
+};
+
+export async function proxy(request: NextRequest): Promise<NextResponse> {
+  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const csp = contentSecurityPolicy(nonce);
+  const { pathname } = request.nextUrl;
+  if (
+    process.env.RESEARCH_LOCAL_MODE === "1" &&
+    (pathname === "/" ||
+      pathname === "/workspace" ||
+      pathname.startsWith("/workspace/") ||
+      pathname.startsWith("/api/research"))
+  ) {
+    const host = request.headers.get("host") || "";
+    if (!/^(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/i.test(host)) {
+      return secureResponse(
+        NextResponse.json(
+          { error: "研究工作区仅允许本机访问。" },
+          { status: 403 },
+        ),
+        csp,
+      );
+    }
+    if (
+      !["GET", "HEAD", "OPTIONS"].includes(request.method) &&
+      crossSiteMutation(request)
+    ) {
+      return secureResponse(
+        NextResponse.json({ error: "不允许跨站写入。" }, { status: 403 }),
+        csp,
+      );
+    }
+    return continueRequest(request, csp);
+  }
+  const wait = consumeRequestLimit(
+    `request:${clientIp(request)}`,
+    publicRequestLimit(),
+    60_000,
+  );
+  if (wait > 0) {
+    return secureResponse(
+      NextResponse.json(
+        { error: "Too many requests." },
+        {
+          status: 429,
+          headers: { "Retry-After": String(Math.ceil(wait / 1000)) },
+        },
+      ),
+      csp,
+    );
+  }
+  if (
+    !["GET", "HEAD", "OPTIONS"].includes(request.method) &&
+    pathname !== "/add" &&
+    pathname !== "/add/confirm" &&
+    pathname !== "/add/status" &&
+    crossSiteMutation(request)
+  ) {
+    return secureResponse(
+      NextResponse.json(
+        { error: "Cross-site request rejected." },
+        { status: 403 },
+      ),
+      csp,
+    );
+  }
+  if (
+    PUBLIC_PATHS.has(pathname) ||
+    /^\/api\/v1\/access\/[a-z-]+$/.test(pathname) ||
+    pathname === "/add" ||
+    pathname === "/add/confirm" ||
+    pathname === "/add/status" ||
+    // Invite links must reach the gate route itself to open it.
+    pathname === "/invite" ||
+    // A share link's unguessable id IS its credential: the point is handing a
+    // single reading to someone who has no account here. Mutations under
+    // /api/v1/shares stay authenticated inside the route.
+    pathname === "/share" ||
+    pathname.startsWith("/share/") ||
+    pathname === "/api/v1/shares" ||
+    pathname.startsWith("/api/v1/shares/")
+  ) {
+    const response = continueRequest(request, csp);
+    response.headers.set("Cache-Control", "private, no-store");
+    response.headers.set("Referrer-Policy", "no-referrer");
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return response;
+  }
+  const token = request.cookies.get(SESSION_COOKIE)?.value;
+  if (token && (await verifySessionToken(token))) {
+    return continueRequest(request, csp);
+  }
+  if (pathname.startsWith("/api/")) {
+    return secureResponse(
+      NextResponse.json({ error: "Not signed in." }, { status: 401 }),
+      csp,
+    );
+  }
+  const login = request.nextUrl.clone();
+  login.pathname = "/login";
+  login.search = "";
+  return secureResponse(NextResponse.redirect(login), csp);
+}

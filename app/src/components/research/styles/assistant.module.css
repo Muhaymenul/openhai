@@ -1,0 +1,80 @@
+.readerSidebar {
+  --ai-text-size: 14px;
+}
+.readerSidebar[data-ai-text-size="small"] {
+  --ai-text-size: 13px;
+}
+.readerSidebar[data-ai-text-size="large"] {
+  --ai-text-size: 16px;
+}
+.readerSidebar .answerBody,
+.readerSidebar .readerNotePreview,
+.readerSidebar .annotationCard > p {
+  font-size: var(--ai-text-size) !important;
+  line-height: 1.7;
+}
+.readerSidebar .studyContent > div,
+.readerSidebar .studyContent details > div {
+  line-height: 1.7;
+}
+.readerSidebar .studyContent h1,
+.readerSidebar .studyContent h2,
+.readerSidebar .studyContent h3 {
+  margin: 1.1em 0 0.45em;
+  line-height: 1.5;
+  font-weight: 600;
+}
+.readerSidebar .studyContent h1 {
+  font-size: 1.2em;
+}
+.readerSidebar .studyContent h2 {
+  font-size: 1.1em;
+}
+.readerSidebar .studyContent h3 {
+  font-size: 1em;
+}
+.readerSidebar .studyContent p,
+.readerSidebar .studyContent ul,
+.readerSidebar .studyContent ol {
+  margin-block: 0.6em;
+}
+.readerSidebar .studyContent th,
+.readerSidebar .studyContent td {
+  padding: 8px 10px;
+  line-height: 1.6;
+}
+.readerSidebar .studyContent blockquote {
+  padding: 9px 12px;
+}
+.readerSidebar .recallCard {
+  margin: 10px 0;
+}
+.readerSidebar .recallCard > summary {
+  padding: 11px 12px;
+  line-height: 1.65;
+}
+.readerSidebar .recallCard > div {
+  padding: 0 12px 12px;
+}
+.readerSidebar[data-ai-text-size] .aiComposer textarea {
+  font-size: var(--ai-text-size) !important;
+}
+
+.readerSidebar .aiWelcome > p,
+.readerSidebar .aiWelcome .eyebrow,
+.readerSidebar .promptCards small,
+.readerSidebar .thinking,
+.readerSidebar .agentSteps > div,
+.readerSidebar .resultIdentity > span:last-child,
+.readerSidebar .aiComposer > div:last-child > span,
+.readerSidebar .aiComposer textarea::placeholder,
+.readerSidebar [data-research-source-selector] > summary,
+.readerSidebar [data-research-source-selector] small,
+.readerSidebar [data-research-source-selector] p {
+  color: #5f646b;
+}
+
+.readerSidebar .sourceChip,
+.readerSidebar .sourceChip:hover {
+  color: #5f646b !important;
+}

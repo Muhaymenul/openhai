@@ -1,0 +1,23 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 1rem 1.5rem;
+  box-sizing: border-box;
+  gap: 0.5rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header > nav {
+  margin-bottom: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.15rem;
+}

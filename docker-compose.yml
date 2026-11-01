@@ -1,0 +1,39 @@
+name: openhai-jiaoyan
+services:
+  paperflow:
+    image: openhai-jiaoyan-paperflow:local
+    build:
+      context: ./services
+      dockerfile: Dockerfile
+    volumes:
+      - ./runtime:/runtime
+      - ./private:/private:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.create_connection(('127.0.0.1',17437),3); s.close()"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+  web:
+    image: openhai-jiaoyan-web:local
+    build:
+      context: ./app
+      dockerfile: Dockerfile.research
+    environment:
+      RESEARCH_LOCAL_MODE: "1"
+      RESEARCH_PROVIDER: paperflow
+      PAPERFLOW_HOST: paperflow
+      PAPERFLOW_PORT: 17437
+      PAPERNOOK_DATA_DIR: /data
+      RESEARCH_DATA_DIR: /data/research
+      RESEARCH_EXAMPLES_DIR: /examples
+      NEXT_TELEMETRY_DISABLED: "1"
+    ports:
+      - "127.0.0.1:${RESEARCH_WEB_PORT:-3000}:3000"
+    volumes:
+      - ./data:/data
+      - ./examples:/examples:ro
+    depends_on:
+      paperflow:
+        condition: service_healthy
+    restart: unless-stopped

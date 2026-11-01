@@ -1,0 +1,60 @@
+.scope {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 7px;
+  font-size: 11px;
+  color: #5f646b;
+  min-width: 0;
+}
+.scope strong {
+  font: inherit;
+  flex: none;
+  color: #405c72;
+}
+.scope > span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.scope > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 32px;
+  min-width: 32px;
+  min-height: 32px;
+  border: 0;
+  background: none;
+  color: inherit;
+  padding: 3px;
+  cursor: pointer;
+  margin-left: auto;
+}
+.scope svg {
+  flex: none;
+}
+.scope button:focus-visible {
+  outline: 2px solid #739ab7;
+}
+.status,
+.warning {
+  display: block !important;
+  font-size: 11px !important;
+  line-height: 1.5;
+  color: #5f646b;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+.warning {
+  color: #985f31;
+}
+
+@media (max-width: 750px) {
+  .scope > button {
+    flex-basis: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}

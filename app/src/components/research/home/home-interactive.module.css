@@ -1,0 +1,257 @@
+.preview {
+  position: absolute;
+  right: var(--home-gutter);
+  top: 50%;
+  transform: translateY(-50%);
+  width: clamp(320px, 31vw, 420px);
+  max-height: calc(100% - 132px);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgb(255 255 255 / 45%);
+  background: rgb(8 11 16 / 94%);
+  color: #fff;
+  box-shadow: 0 20px 60px rgb(0 0 0 / 25%);
+}
+
+.preview:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 5px;
+}
+
+.previewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px 10px;
+}
+
+.previewHeader h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 400;
+}
+
+.previewHeader .close {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+}
+
+.previewItems {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 20px;
+}
+
+.previewItems > button {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 15px 0;
+  background: transparent;
+  border-bottom: 1px solid rgb(255 255 255 / 20%);
+  text-align: left;
+}
+
+.previewItems > button:last-child {
+  border-bottom: 0;
+}
+
+.previewItems > button:hover strong {
+  color: #ffaaa5;
+}
+
+.previewItems > button svg {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.previewItems strong,
+.searchResult strong {
+  display: block;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.previewItems small,
+.searchResult small {
+  display: block;
+  margin-top: 6px;
+  color: #bec6d1;
+  font-size: 13px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.preview .previewEnter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  min-height: 58px;
+  padding: 14px 20px;
+  border-top: 1px solid rgb(255 255 255 / 38%);
+  background: transparent;
+  font-size: 17px;
+  text-align: left;
+}
+
+.previewEnter:hover,
+.close:hover {
+  background: rgb(255 255 255 / 10%);
+}
+
+.empty {
+  margin: 12px 0 24px;
+  color: #d4dae2;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.searchForm {
+  padding: 4px 24px 0;
+  color: var(--text, #1f2328);
+}
+
+.searchLabel {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+
+.searchInput {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 5px 5px 5px 12px;
+  border: 1px solid var(--border, #aab0b8);
+  border-radius: 4px;
+  background: var(--surface, #fff);
+}
+
+.searchInput input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text, #1f2328);
+  font: inherit;
+  font-size: 17px;
+}
+
+.searchInput input:focus-visible {
+  outline: 2px solid #1864ab;
+  outline-offset: 4px;
+}
+
+.searchInput > button {
+  flex-shrink: 0;
+  min-height: 38px;
+  padding: 6px 12px;
+  background: #202a36;
+  color: #fff;
+  font-size: 15px;
+}
+
+.searchInput > button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.searchStatus {
+  margin: 12px 24px;
+  color: var(--text-secondary, #5a626d);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.searchResults {
+  max-height: min(440px, 48dvh);
+  min-height: 36px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 24px 20px;
+}
+
+.searchResults .searchResult {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  min-height: 60px;
+  padding: 14px 10px;
+  border-bottom: 1px solid var(--border, #dfe3e8);
+  background: transparent;
+  color: var(--text, #1f2328);
+  text-align: left;
+}
+
+.searchResult:hover {
+  background: var(--surface-hover, #eff3f7);
+}
+
+.searchResult small {
+  color: var(--text-secondary, #5a626d);
+}
+
+.searchResult svg {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.searchInput > button:focus-visible,
+.searchResults .searchResult:focus-visible {
+  outline: 2px solid #1864ab;
+  outline-offset: -2px;
+}
+
+@media (width <= 1100px) {
+  .preview {
+    position: relative;
+    inset: auto;
+    transform: none;
+    width: min(100%, 620px);
+    max-height: 400px;
+  }
+}
+
+@media (width <= 750px) {
+  .preview {
+    max-height: 420px;
+  }
+
+  .previewHeader,
+  .preview .previewEnter {
+    padding-inline: 16px;
+  }
+
+  .previewItems {
+    padding-inline: 16px;
+  }
+
+  .searchForm {
+    padding-inline: 16px;
+  }
+
+  .searchStatus {
+    margin-inline: 16px;
+  }
+
+  .searchResults {
+    padding-inline: 16px;
+  }
+}

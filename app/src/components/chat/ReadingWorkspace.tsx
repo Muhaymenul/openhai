@@ -1,0 +1,306 @@
+"use client";
+
+import type { ReactNode } from "react";
+import { useEffect, useId, useState, useSyncExternalStore } from "react";
+import { CHAT_PROMPT_EVENT } from "@/lib/chat/paper-ref-events";
+import styles from "./ReadingWorkspace.module.css";
+
+interface ReadingWorkspaceProps {
+  main: ReactNode;
+  chat: ReactNode;
+  mainLabel: string;
+  workspaceLabel?: string;
+  /** Actions that remain available while the header or chat is hidden. */
+  actions?: ReactNode;
+  /** Page chrome (title, breadcrumbs) the header toggle can hide. */
+  header?: ReactNode;
+  /** Header actions that must stay reachable while the header is hidden. */
+  collapsedHeaderActions?: ReactNode;
+}
+
+const CHAT_VISIBILITY_KEY = "papernook:reading-chat-visible";
+const CHAT_VISIBILITY_EVENT = "papernook:reading-chat-changed";
+const HEADER_VISIBILITY_KEY = "papernook:reading-header-visible";
+const HEADER_VISIBILITY_EVENT = "papernook:reading-header-changed";
+const CHAT_WIDTH_KEY = "papernook:reading-chat-width";
+const CHAT_WIDTH_EVENT = "papernook:reading-chat-width-changed";
+const CHAT_MIN_WIDTH = 280;
+
+function subscribeTo(event: string) {
+  return (onStoreChange: () => void): (() => void) => {
+    window.addEventListener("storage", onStoreChange);
+    window.addEventListener(event, onStoreChange);
+    return () => {
+      window.removeEventListener("storage", onStoreChange);
+      window.removeEventListener(event, onStoreChange);
+    };
+  };
+}
+
+const subscribe = subscribeTo(CHAT_VISIBILITY_EVENT);
+const subscribeHeader = subscribeTo(HEADER_VISIBILITY_EVENT);
+const subscribeWidth = subscribeTo(CHAT_WIDTH_EVENT);
+
+function storedChatWidth(): number | null {
+  const stored = Number(window.localStorage.getItem(CHAT_WIDTH_KEY));
+  return Number.isFinite(stored) && stored >= CHAT_MIN_WIDTH ? stored : null;
+}
+
+function setChatWidth(width: number | null): void {
+  if (width === null) {
+    window.localStorage.removeItem(CHAT_WIDTH_KEY);
+  } else {
+    window.localStorage.setItem(CHAT_WIDTH_KEY, String(width));
+  }
+  window.dispatchEvent(new Event(CHAT_WIDTH_EVENT));
+}
+
+function chatIsVisible(): boolean {
+  return window.localStorage.getItem(CHAT_VISIBILITY_KEY) !== "hidden";
+}
+
+function headerIsVisible(): boolean {
+  return window.localStorage.getItem(HEADER_VISIBILITY_KEY) !== "hidden";
+}
+
+function setVisibility(key: string, event: string, visible: boolean): void {
+  window.localStorage.setItem(key, visible ? "visible" : "hidden");
+  window.dispatchEvent(new Event(event));
+}
+
+function subscribeToCompact(onStoreChange: () => void): () => void {
+  const query = window.matchMedia("(max-width: 900px)");
+  query.addEventListener("change", onStoreChange);
+  return () => query.removeEventListener("change", onStoreChange);
+}
+
+function compactReadingWorkspace(): boolean {
+  return window.matchMedia("(max-width: 900px)").matches;
+}
+
+export function ReadingWorkspace({
+  main,
+  chat,
+  mainLabel,
+  workspaceLabel = "Paper workspace",
+  actions,
+  header,
+  collapsedHeaderActions,
+}: ReadingWorkspaceProps) {
+  const chatVisible = useSyncExternalStore(
+    subscribe,
+    chatIsVisible,
+    () => true,
+  );
+  const headerVisible = useSyncExternalStore(
+    subscribeHeader,
+    headerIsVisible,
+    () => true,
+  );
+  const compact = useSyncExternalStore(
+    subscribeToCompact,
+    compactReadingWorkspace,
+    () => false,
+  );
+  const [compactTab, setCompactTab] = useState<"reading" | "chat">("reading");
+  const [resizing, setResizing] = useState(false);
+  const chatWidth = useSyncExternalStore(
+    subscribeWidth,
+    storedChatWidth,
+    () => null,
+  );
+  const baseId = useId();
+
+  // A prompt handed to the chat must land somewhere the reader can see it:
+  // surface the chat tab on compact layouts and leave focus-reading mode.
+  useEffect(() => {
+    const onPrompt = () => {
+      setCompactTab("chat");
+      if (!chatIsVisible()) {
+        setVisibility(CHAT_VISIBILITY_KEY, CHAT_VISIBILITY_EVENT, true);
+      }
+    };
+    window.addEventListener(CHAT_PROMPT_EVENT, onPrompt);
+    return () => window.removeEventListener(CHAT_PROMPT_EVENT, onPrompt);
+  }, []);
+
+  function clampChatWidth(width: number, rootWidth: number): number {
+    return Math.round(
+      Math.min(Math.max(width, CHAT_MIN_WIDTH), rootWidth * 0.7),
+    );
+  }
+
+  function startResize(event: React.PointerEvent<HTMLDivElement>): void {
+    const handle = event.currentTarget;
+    const root = handle.parentElement;
+    if (!root) return;
+    event.preventDefault();
+    handle.setPointerCapture(event.pointerId);
+    setResizing(true);
+    const onMove = (move: PointerEvent) => {
+      const rect = root.getBoundingClientRect();
+      setChatWidth(clampChatWidth(rect.right - move.clientX, rect.width));
+    };
+    const onUp = () => {
+      handle.removeEventListener("pointermove", onMove);
+      handle.removeEventListener("pointerup", onUp);
+      handle.removeEventListener("pointercancel", onUp);
+      setResizing(false);
+    };
+    handle.addEventListener("pointermove", onMove);
+    handle.addEventListener("pointerup", onUp);
+    handle.addEventListener("pointercancel", onUp);
+  }
+
+  function resizeByKeyboard(event: React.KeyboardEvent<HTMLDivElement>): void {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    event.preventDefault();
+    const root = event.currentTarget.parentElement;
+    if (!root) return;
+    const next = clampChatWidth(
+      (chatWidth ?? 380) + (event.key === "ArrowLeft" ? 24 : -24),
+      root.getBoundingClientRect().width,
+    );
+    setChatWidth(next);
+  }
+  const readingTabId = `${baseId}-reading-tab`;
+  const chatTabId = `${baseId}-chat-tab`;
+  const readingPanelId = `${baseId}-reading-panel`;
+  const chatPanelId = `${baseId}-chat-panel`;
+
+  function toggleChat(): void {
+    if (chatVisible) {
+      // Focus reading is the everything-off mode: text only.
+      setVisibility(CHAT_VISIBILITY_KEY, CHAT_VISIBILITY_EVENT, false);
+      setVisibility(HEADER_VISIBILITY_KEY, HEADER_VISIBILITY_EVENT, false);
+      return;
+    }
+    setVisibility(CHAT_VISIBILITY_KEY, CHAT_VISIBILITY_EVENT, true);
+  }
+
+  function toggleHeader(): void {
+    setVisibility(
+      HEADER_VISIBILITY_KEY,
+      HEADER_VISIBILITY_EVENT,
+      !headerVisible,
+    );
+  }
+
+  function selectAdjacentTab(event: React.KeyboardEvent<HTMLDivElement>): void {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    event.preventDefault();
+    const next = compactTab === "reading" ? "chat" : "reading";
+    setCompactTab(next);
+    document
+      .getElementById(next === "reading" ? readingTabId : chatTabId)
+      ?.focus();
+  }
+
+  return (
+    <>
+      {header && headerVisible && header}
+      <div
+        className={`${styles.root} ${chatVisible ? "" : styles.focusMode} ${resizing ? styles.resizing : ""}`}
+        data-chat-visible={chatVisible}
+        data-compact-tab={compactTab}
+        data-has-actions={Boolean(actions)}
+        style={
+          chatWidth
+            ? ({ "--chat-width": `${chatWidth}px` } as React.CSSProperties)
+            : undefined
+        }
+      >
+        <div
+          className={styles.mobileTabs}
+          role="tablist"
+          aria-label={workspaceLabel}
+          onKeyDown={selectAdjacentTab}
+        >
+          <button
+            id={readingTabId}
+            type="button"
+            role="tab"
+            aria-selected={compactTab === "reading"}
+            aria-controls={readingPanelId}
+            tabIndex={compactTab === "reading" ? 0 : -1}
+            onClick={() => setCompactTab("reading")}
+          >
+            Reading
+          </button>
+          <button
+            id={chatTabId}
+            type="button"
+            role="tab"
+            aria-selected={compactTab === "chat"}
+            aria-controls={chatPanelId}
+            tabIndex={compactTab === "chat" ? 0 : -1}
+            onClick={() => setCompactTab("chat")}
+          >
+            Chat
+          </button>
+        </div>
+        <section
+          id={readingPanelId}
+          className={styles.main}
+          aria-label={mainLabel}
+          role={compact ? "tabpanel" : undefined}
+          aria-labelledby={compact ? readingTabId : undefined}
+        >
+          {main}
+        </section>
+        {chatVisible && (
+          <div
+            className={styles.divider}
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize chat panel"
+            tabIndex={0}
+            onPointerDown={startResize}
+            onKeyDown={resizeByKeyboard}
+            onDoubleClick={() => setChatWidth(null)}
+          />
+        )}
+        <aside
+          id={chatPanelId}
+          className={`${styles.chat} ${chatVisible ? "" : styles.desktopChatHidden}`}
+          role={compact ? "tabpanel" : undefined}
+          aria-labelledby={compact ? chatTabId : undefined}
+        >
+          {chat}
+        </aside>
+        <div className={styles.toolbar}>
+          {(actions ||
+            (header && !headerVisible && collapsedHeaderActions)) && (
+            <div className={styles.collapsedActions}>
+              {actions}
+              {header && !headerVisible && collapsedHeaderActions}
+            </div>
+          )}
+          <div className={styles.toggleRow}>
+            {header && (
+              <button
+                type="button"
+                className={styles.toggle}
+                onClick={toggleHeader}
+                aria-expanded={headerVisible}
+              >
+                <span aria-hidden="true">{headerVisible ? "↑" : "↓"}</span>
+                {headerVisible ? "Hide header" : "Show header"}
+              </button>
+            )}
+            <button
+              type="button"
+              className={styles.toggle}
+              onClick={toggleChat}
+              aria-expanded={chatVisible}
+              aria-controls={chatPanelId}
+            >
+              <span aria-hidden="true">{chatVisible ? "→" : "←"}</span>
+              {chatVisible ? "Focus reading" : "Show chat"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}

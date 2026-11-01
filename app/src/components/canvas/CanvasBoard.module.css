@@ -1,0 +1,181 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0 0 0.55rem;
+  flex-wrap: wrap;
+}
+
+.toolbar > div {
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+}
+
+.hint {
+  color: color-mix(in srgb, currentColor 58%, transparent);
+  font-size: 0.78rem;
+}
+
+.toolbarActions {
+  margin-left: auto;
+}
+
+.toolbar button {
+  min-height: 44px;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  background: transparent;
+  color: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.status {
+  font-size: 0.85rem;
+  color: #a75831;
+}
+
+.statusSaved {
+  color: color-mix(in srgb, currentColor 58%, transparent);
+}
+
+.board {
+  flex: 1;
+  min-height: 0;
+  border: 1px solid rgba(127, 127, 127, 0.25);
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.boardLoading {
+  pointer-events: none;
+}
+
+.loadingOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  background: var(--background);
+  color: color-mix(in srgb, currentColor 62%, transparent);
+  text-align: center;
+}
+
+.licenseNotice {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.7rem;
+  padding: 2rem;
+  background: var(--background);
+  text-align: center;
+  overflow: auto;
+}
+
+.licenseNotice h2 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.35rem;
+  font-weight: 400;
+}
+
+.licenseNotice p {
+  max-width: 520px;
+  margin: 0;
+  color: color-mix(in srgb, currentColor 64%, transparent);
+  line-height: 1.5;
+}
+
+.licenseNotice div {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.licenseNotice a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.85rem;
+  border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+  border-radius: 9px;
+  color: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.toolbar button:focus-visible,
+.licenseNotice a:focus-visible,
+.licenseNotice h2:focus-visible {
+  outline: 2px solid #6576dd;
+  outline-offset: 3px;
+}
+
+.pdfAnnotator {
+  position: absolute;
+  inset: 0;
+  z-index: 700;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0.75rem;
+  background: var(--background);
+}
+
+.pdfAnnotatorHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 0 0.65rem;
+}
+
+.pdfAnnotatorHeader > div {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+}
+
+.pdfAnnotatorHeader span {
+  color: color-mix(in srgb, currentColor 60%, transparent);
+  font-size: 0.8rem;
+}
+
+.pdfAnnotatorReader {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: 10px;
+}
+
+@media (max-width: 700px) {
+  .hint {
+    display: none;
+  }
+
+  .pdfAnnotator {
+    padding: 0.35rem;
+  }
+
+  .pdfAnnotatorHeader > div span {
+    display: none;
+  }
+}

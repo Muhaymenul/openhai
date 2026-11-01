@@ -1,0 +1,25 @@
+.printHeading {
+  display: none;
+}
+
+@media print {
+  .printHeading {
+    display: block;
+    color: #16181c;
+    margin-bottom: 22px;
+    border-bottom: 1px solid #bbb;
+    padding-bottom: 16px;
+  }
+
+  .printHeading h1 {
+    font-size: 22px;
+    line-height: 1.4;
+    margin: 8px 0;
+  }
+
+  .printHeading p {
+    font-size: 11px;
+    line-height: 1.7;
+    margin: 5px 0;
+  }
+}

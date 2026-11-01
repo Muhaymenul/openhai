@@ -1,0 +1,62 @@
+import { defineConfig, devices } from "@playwright/test";
+
+const dataDir = `${process.cwd()}/.playwright-data`;
+
+export default defineConfig({
+  testDir: "./tests/e2e",
+  timeout: 60_000,
+  fullyParallel: false,
+  workers: 1,
+  retries: process.env.CI ? 2 : 0,
+  reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "line",
+  snapshotPathTemplate: "{testDir}/../../docs/images/{arg}{ext}",
+  // These snapshots double as the documentation images in docs/images, so
+  // they are generated on macOS and carry its font metrics. Comparing them
+  // on another platform fails on 1px layout differences that say nothing
+  // about the app — and Playwright rejects a size mismatch outright, before
+  // any pixel threshold applies. Compare only where they were produced; the
+  // journeys still run everywhere, asserting behaviour rather than pixels.
+  ignoreSnapshots: process.platform !== "darwin",
+  use: {
+    baseURL: "http://127.0.0.1:3107",
+    trace: "retain-on-failure",
+    screenshot: "only-on-failure",
+    serviceWorkers: "block",
+    viewport: { width: 1440, height: 1000 },
+  },
+  projects: [
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+      testIgnore: "**/safari-reader.spec.ts",
+    },
+    {
+      // Reader and comment placement smoke tests also run in Safari. The
+      // screenshot journeys stay on Chromium because snapshots are engine-specific.
+      name: "webkit",
+      use: { ...devices["Desktop Safari"] },
+      testMatch: [
+        "**/safari-reader.spec.ts",
+        "**/reader/comment-position.spec.ts",
+        "**/reader/dark-pdf.spec.ts",
+      ],
+    },
+  ],
+  webServer: {
+    command: "node tests/e2e/support/server.mjs",
+    env: {
+      PAPERNOOK_DATA_DIR: dataDir,
+      PAPERNOOK_URL: "http://127.0.0.1:3107",
+      SESSION_SECRET:
+        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      PAPERNOOK_PUBLIC_REQUEST_LIMIT: "1000",
+      PATH: `${process.cwd()}/tests/e2e/bin:${process.env.PATH}`,
+      AI_PROVIDER: "codex",
+      WEBDAV_USER: "papers",
+      WEBDAV_PASS: "annotate-locally",
+    },
+    wait: { stdout: /Browser fixture ready/ },
+    reuseExistingServer: false,
+    timeout: 120_000,
+  },
+});

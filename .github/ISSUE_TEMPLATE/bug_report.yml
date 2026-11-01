@@ -1,0 +1,28 @@
+name: 问题反馈
+description: 报告安装、阅读、批注、笔记或图谱问题
+title: "[问题] "
+body:
+  - type: input
+    id: environment
+    attributes:
+      label: 系统与版本
+      description: 操作系统、Docker版本及浏览器
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 重现步骤
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期结果与实际结果
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 截图或日志
+      description: 提交前移除令牌和私人论文内容

@@ -1,0 +1,207 @@
+/* Keep the application in the viewport. Each working surface owns its scroll. */
+.workspaceRoot {
+  --research-header-height: 68px;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.coverRoot {
+  display: block;
+  overflow-y: auto;
+  background: #fff;
+}
+
+.homeConnectionError {
+  position: fixed;
+  z-index: 30;
+  top: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: min(600px, calc(100% - 32px));
+  padding: 12px 16px;
+  border: 1px solid #c87970;
+  background: #fff6f4;
+  color: #842d25;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.homeConnectionError > span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.homeConnectionError > button {
+  padding: 6px 10px;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* These exact body siblings were observed in the affected browser. They are
+   extension panels, not app portals. Keep comments and dialogs untouched. */
+:global(body):has(.workspaceRoot) > :global(.ait-panel-modal),
+:global(body):has(.workspaceRoot) > :global(.ait-notepad-panel),
+:global(body):has(.workspaceRoot) > :global(.timeline-copy-feedback),
+:global(body):has(.workspaceRoot) > :global(.ait-highlight-standalone-btn) {
+  display: none !important;
+}
+
+.mainColumn {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.topbar {
+  flex: 0 0 var(--research-header-height);
+  height: var(--research-header-height);
+}
+
+.sidebar,
+.sidebarOpen {
+  height: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+
+.mainContent,
+.mainReading {
+  flex: 1 1 0;
+  min-height: 0;
+  overscroll-behavior-y: contain;
+}
+
+.mainContent {
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.mainReading {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.readerPage {
+  flex: 1 1 0;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.readerHeading {
+  flex: 0 0 auto;
+}
+
+.readingWorkspace {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.pdfPane,
+.pdfMount,
+.readerSidebar {
+  min-height: 0;
+}
+
+@media (max-width: 750px) {
+  .workspaceRoot {
+    --research-header-height: 61px;
+  }
+
+  .mainReading {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .readerPage {
+    flex: 0 0 auto;
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+
+  .readingWorkspace {
+    flex: none;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+  }
+
+  .pdfPane {
+    min-height: 450px;
+  }
+
+  .readerSidebar {
+    min-height: 560px;
+  }
+}
+
+@media print {
+  :global(html):has(.workspaceRoot),
+  :global(body):has(.workspaceRoot) {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff;
+  }
+
+  /* Extension UI and app dialogs do not belong to a printed research record. */
+  :global(body):has(.workspaceRoot) > :not(.workspaceRoot) {
+    display: none !important;
+  }
+
+  .workspaceRoot,
+  .workspaceRoot .mainColumn,
+  .workspaceRoot .mainContent,
+  .workspaceRoot .mainReading,
+  .workspaceRoot .readerPage,
+  .workspaceRoot .readingWorkspace,
+  .workspaceRoot .readerSidebar,
+  .workspaceRoot .aiScroll,
+  .workspaceRoot .sidebarScroll {
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: #fff;
+    border: 0;
+  }
+
+  .workspaceRoot .sidebar,
+  .workspaceRoot .sidebarOpen,
+  .workspaceRoot .topbar,
+  .workspaceRoot .readerHeading,
+  .workspaceRoot .pdfPane,
+  .workspaceRoot .readerTabs,
+  .workspaceRoot .studyActions,
+  .workspaceRoot .recentDiscussions,
+  .workspaceRoot .aiComposer,
+  .workspaceRoot .readerPage button,
+  .workspaceRoot input,
+  .workspaceRoot select,
+  .workspaceRoot textarea,
+  .workspaceRoot [role="separator"],
+  .workspaceRoot [data-research-source-selector] {
+    display: none !important;
+  }
+
+  .workspaceRoot .aiScroll,
+  .workspaceRoot .sidebarScroll {
+    padding: 0;
+  }
+}

@@ -1,0 +1,375 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { NextRequest } from "next/server";
+import { createTestProfile, mockTestSession } from "../../helpers/access";
+
+let tmpDir: string;
+
+beforeEach(async () => {
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "papernook-chat-delete-"));
+  process.env.PAPERNOOK_DATA_DIR = tmpDir;
+  vi.resetModules();
+  await createTestProfile("Andres");
+  await mockTestSession("andres");
+});
+
+afterEach(async () => {
+  vi.doUnmock("next/headers");
+  vi.unstubAllEnvs();
+  const { closeIndex } = await import("@/lib/library/index-db");
+  closeIndex();
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+async function seedChat() {
+  const chats = await import("@/lib/library/chats");
+  const chat = chats.createChat("ml", "paper", "andres", "First chat");
+  chats.appendMessage("ml", "paper", "andres", chat.id, {
+    role: "user",
+    content: "first question",
+    at: "2026-08-10T10:00:00.000Z",
+  });
+  chats.appendMessage("ml", "paper", "andres", chat.id, {
+    role: "assistant",
+    content: "first answer",
+    at: "2026-08-10T10:00:05.000Z",
+  });
+  return { chats, chatId: chat.id };
+}
+
+async function placePaper() {
+  const papers = await import("@/lib/library/papers");
+  papers.writeMeta("ml", "paper", {
+    title: "Paper",
+    authors: [],
+    year: null,
+    venue: null,
+    arxivId: null,
+    bibtex: null,
+    tags: [],
+    related: [],
+    sourceUrl: "https://example.test/paper.pdf",
+    addedAt: new Date().toISOString(),
+    addedBy: "andres",
+  });
+  const pdf = papers.pdfPath("ml", "paper");
+  fs.mkdirSync(path.dirname(pdf), { recursive: true });
+  fs.writeFileSync(pdf, "%PDF-1.4");
+}
+
+describe("POST /chats", () => {
+  async function createConversation(body: unknown) {
+    const route =
+      await import("@/app/api/v1/papers/[topic]/[slug]/chats/route");
+    return route.POST(
+      new NextRequest("http://localhost/chats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+      { params: Promise.resolve({ topic: "ml", slug: "paper" }) },
+    );
+  }
+
+  it("creates an untitled conversation for the first query to name", async () => {
+    await placePaper();
+    const response = await createConversation({});
+
+    expect(response.status).toBe(201);
+    const result = (await response.json()) as { chat: { title: string } };
+    expect(result.chat.title).toBe("New chat");
+  });
+
+  it("rejects caller-supplied titles", async () => {
+    await placePaper();
+    const response = await createConversation({ title: "Date title" });
+
+    expect(response.status).toBe(400);
+  });
+});
+
+describe("deleteMessage", () => {
+  it("removes only the targeted message and keeps the rest readable", async () => {
+    const { chats, chatId } = await seedChat();
+    const removed = chats.deleteMessage(
+      "ml",
+      "paper",
+      "andres",
+      chatId,
+      0,
+      "2026-08-10T10:00:00.000Z",
+    );
+    expect(removed).toBe(true);
+    const stored = chats.readChat("ml", "paper", "andres", chatId);
+    expect(stored?.messages.map((m) => m.content)).toEqual(["first answer"]);
+    expect(stored?.header.title).toBe("First chat");
+  });
+
+  it("rejects a stale timestamp without touching the file", async () => {
+    const { chats, chatId } = await seedChat();
+    expect(
+      chats.deleteMessage("ml", "paper", "andres", chatId, 0, "2020-01-01"),
+    ).toBe(false);
+    expect(
+      chats.deleteMessage("ml", "paper", "andres", chatId, 7, "2020-01-01"),
+    ).toBe(false);
+    const stored = chats.readChat("ml", "paper", "andres", chatId);
+    expect(stored?.messages).toHaveLength(2);
+  });
+
+  it("deletes the message's crop files but not other crops", async () => {
+    const { chats, chatId } = await seedChat();
+    const papers = await import("@/lib/library/papers");
+    const companion = papers.companionDir("ml", "paper");
+    const crops = path.join(companion, "crops");
+    fs.mkdirSync(crops, { recursive: true });
+    fs.writeFileSync(path.join(crops, "mine.png"), "png");
+    fs.writeFileSync(path.join(crops, "other.png"), "png");
+    chats.appendMessage("ml", "paper", "andres", chatId, {
+      role: "user",
+      content: "look at this",
+      images: ["crops/mine.png"],
+      at: "2026-08-10T10:01:00.000Z",
+    });
+
+    chats.deleteMessage(
+      "ml",
+      "paper",
+      "andres",
+      chatId,
+      2,
+      "2026-08-10T10:01:00.000Z",
+    );
+    expect(fs.existsSync(path.join(crops, "mine.png"))).toBe(false);
+    expect(fs.existsSync(path.join(crops, "other.png"))).toBe(true);
+  });
+});
+
+describe("deleteChat", () => {
+  it("removes the conversation and only its referenced crops", async () => {
+    const { chats, chatId } = await seedChat();
+    const papers = await import("@/lib/library/papers");
+    const crops = path.join(papers.companionDir("ml", "paper"), "crops");
+    fs.mkdirSync(crops, { recursive: true });
+    fs.writeFileSync(path.join(crops, "attached.png"), "png");
+    fs.writeFileSync(path.join(crops, "unrelated.png"), "png");
+    chats.appendMessage("ml", "paper", "andres", chatId, {
+      role: "user",
+      content: "question with an image",
+      images: ["crops/attached.png"],
+      at: "2026-08-10T10:01:00.000Z",
+    });
+
+    expect(chats.deleteChat("ml", "paper", "andres", chatId)).toBe(true);
+    expect(chats.readChat("ml", "paper", "andres", chatId)).toBeNull();
+    expect(fs.existsSync(path.join(crops, "attached.png"))).toBe(false);
+    expect(fs.existsSync(path.join(crops, "unrelated.png"))).toBe(true);
+  });
+
+  it("cannot delete another profile's chat", async () => {
+    const chats = await import("@/lib/library/chats");
+    const other = chats.createChat("ml", "paper", "someone-else", "Private");
+
+    expect(chats.deleteChat("ml", "paper", "andres", other.id)).toBe(false);
+    expect(
+      chats.readChat("ml", "paper", "someone-else", other.id),
+    ).not.toBeNull();
+  });
+
+  it("removes the crops directory when its last attachment is deleted", async () => {
+    const { chats, chatId } = await seedChat();
+    const papers = await import("@/lib/library/papers");
+    const crops = path.join(papers.companionDir("ml", "paper"), "crops");
+    fs.mkdirSync(crops, { recursive: true });
+    fs.writeFileSync(path.join(crops, "only.png"), "png");
+    chats.appendMessage("ml", "paper", "andres", chatId, {
+      role: "user",
+      content: "the only attachment",
+      images: ["crops/only.png"],
+      at: "2026-08-10T10:01:00.000Z",
+    });
+
+    expect(chats.deleteChat("ml", "paper", "andres", chatId)).toBe(true);
+    expect(fs.existsSync(crops)).toBe(false);
+  });
+
+  it("does not let a late assistant append recreate a deleted chat", async () => {
+    const { chats, chatId } = await seedChat();
+    expect(chats.deleteChat("ml", "paper", "andres", chatId)).toBe(true);
+
+    expect(() =>
+      chats.appendMessage("ml", "paper", "andres", chatId, {
+        role: "assistant",
+        content: "late answer",
+        at: "2026-08-10T10:02:00.000Z",
+      }),
+    ).toThrow();
+    expect(chats.listChats("ml", "paper", "andres")).toEqual([]);
+  });
+});
+
+describe("renameChat", () => {
+  it("sets an authoritative title without changing messages", async () => {
+    const { chats, chatId } = await seedChat();
+    const before = chats.readChat("ml", "paper", "andres", chatId)?.messages;
+
+    const renamed = chats.renameChat(
+      "ml",
+      "paper",
+      "andres",
+      chatId,
+      "  Residual   connection theory  ",
+    );
+
+    expect(renamed).toEqual(
+      expect.objectContaining({
+        title: "Residual connection theory",
+        titleSource: "manual",
+      }),
+    );
+    expect(chats.readChat("ml", "paper", "andres", chatId)?.messages).toEqual(
+      before,
+    );
+  });
+
+  it("rejects invalid titles and cannot recreate a deleted chat", async () => {
+    const { chats, chatId } = await seedChat();
+    expect(() =>
+      chats.renameChat("ml", "paper", "andres", chatId, "   "),
+    ).toThrow(/cannot be empty/);
+    expect(chats.deleteChat("ml", "paper", "andres", chatId)).toBe(true);
+    expect(
+      chats.renameChat("ml", "paper", "andres", chatId, "Too late"),
+    ).toBeNull();
+  });
+});
+
+describe("DELETE /chats/[chatId]", () => {
+  async function callDelete(chatId: string, body: unknown) {
+    const route =
+      await import("@/app/api/v1/papers/[topic]/[slug]/chats/[chatId]/route");
+    return route.DELETE(
+      new NextRequest("http://localhost/chat", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+      { params: Promise.resolve({ topic: "ml", slug: "paper", chatId }) },
+    );
+  }
+
+  it("deletes the addressed message from the caller's chat", async () => {
+    const { chats, chatId } = await seedChat();
+    const response = await callDelete(chatId, {
+      index: 1,
+      at: "2026-08-10T10:00:05.000Z",
+    });
+    expect(response.status).toBe(200);
+    const stored = chats.readChat("ml", "paper", "andres", chatId);
+    expect(stored?.messages.map((m) => m.content)).toEqual(["first question"]);
+  });
+
+  it("deletes the caller's entire conversation", async () => {
+    const { chats, chatId } = await seedChat();
+    const response = await callDelete(chatId, { entire: true });
+
+    expect(response.status).toBe(200);
+    expect(chats.readChat("ml", "paper", "andres", chatId)).toBeNull();
+  });
+
+  it("responds 404 when an entire conversation is absent", async () => {
+    const response = await callDelete("0123456789abcdef", { entire: true });
+    expect(response.status).toBe(404);
+  });
+
+  it("cannot delete another profile's entire conversation", async () => {
+    const chats = await import("@/lib/library/chats");
+    const other = chats.createChat("ml", "paper", "someone-else", "Private");
+    const response = await callDelete(other.id, { entire: true });
+
+    expect(response.status).toBe(404);
+    expect(
+      chats.readChat("ml", "paper", "someone-else", other.id),
+    ).not.toBeNull();
+  });
+
+  it("responds 409 on a stale index/timestamp so the client resyncs", async () => {
+    const { chats, chatId } = await seedChat();
+    const response = await callDelete(chatId, { index: 1, at: "2020-01-01" });
+    expect(response.status).toBe(409);
+    expect(
+      chats.readChat("ml", "paper", "andres", chatId)?.messages,
+    ).toHaveLength(2);
+  });
+
+  it("rejects malformed bodies", async () => {
+    const { chatId } = await seedChat();
+    const response = await callDelete(chatId, { index: -1, at: "" });
+    expect(response.status).toBe(400);
+  });
+
+  it("cannot reach another profile's chat", async () => {
+    const chats = await import("@/lib/library/chats");
+    const other = chats.createChat("ml", "paper", "someone-else", "Private");
+    chats.appendMessage("ml", "paper", "someone-else", other.id, {
+      role: "user",
+      content: "secret",
+      at: "2026-08-10T10:00:00.000Z",
+    });
+    const response = await callDelete(other.id, {
+      index: 0,
+      at: "2026-08-10T10:00:00.000Z",
+    });
+    expect(response.status).toBe(409);
+    expect(
+      chats.readChat("ml", "paper", "someone-else", other.id)?.messages,
+    ).toHaveLength(1);
+  });
+});
+
+describe("PATCH /chats/[chatId]", () => {
+  async function callPatch(chatId: string, body: unknown) {
+    const route =
+      await import("@/app/api/v1/papers/[topic]/[slug]/chats/[chatId]/route");
+    return route.PATCH(
+      new NextRequest("http://localhost/chat", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+      { params: Promise.resolve({ topic: "ml", slug: "paper", chatId }) },
+    );
+  }
+
+  it("renames the caller's conversation", async () => {
+    const { chats, chatId } = await seedChat();
+    const response = await callPatch(chatId, { title: "  Better   title " });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      chat: expect.objectContaining({
+        id: chatId,
+        title: "Better title",
+        titleSource: "manual",
+      }),
+    });
+    expect(chats.readChat("ml", "paper", "andres", chatId)?.header.title).toBe(
+      "Better title",
+    );
+  });
+
+  it("rejects blank and oversized titles", async () => {
+    const { chatId } = await seedChat();
+    expect((await callPatch(chatId, { title: "   " })).status).toBe(400);
+    expect((await callPatch(chatId, { title: "x".repeat(121) })).status).toBe(
+      400,
+    );
+  });
+
+  it("returns 404 for an absent conversation", async () => {
+    const response = await callPatch("0123456789abcdef", { title: "Gone" });
+    expect(response.status).toBe(404);
+  });
+});

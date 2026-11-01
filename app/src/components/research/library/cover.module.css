@@ -1,0 +1,80 @@
+.gridMain.gridMain {
+  flex-direction: column;
+  gap: 16px;
+  padding: 14px 14px 18px;
+  min-height: 0;
+}
+.listMain.listMain {
+  align-items: center;
+  min-height: 125px;
+}
+.cover,
+.compact {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #f0f1f3;
+  color: #9aa1ab;
+  border: 1px solid #e1e4e9;
+  border-radius: 2px;
+}
+.cover {
+  width: 100%;
+  height: 196px;
+}
+.compact {
+  width: 64px;
+  height: 88px;
+}
+.cover img,
+.compact img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  object-fit: contain;
+  object-position: center;
+}
+.compact img {
+  padding: 2px;
+}
+.cover[data-cover-state="loading"] > img,
+.compact[data-cover-state="loading"] > img {
+  opacity: 0;
+}
+.placeholder {
+  position: absolute;
+  stroke-width: 1.2;
+}
+.pageCount {
+  position: absolute;
+  right: 7px;
+  bottom: 6px;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 92%);
+  color: #60646b;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.compact .pageCount {
+  right: 2px;
+  bottom: 2px;
+  padding: 0 3px;
+  font-size: 11px;
+}
+.gridMain > div:last-child {
+  width: 100%;
+}
+@media (max-width: 750px) {
+  .cover {
+    height: 210px;
+  }
+  .listMain.listMain {
+    gap: 12px;
+    padding: 14px;
+  }
+}

@@ -1,0 +1,104 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { z } from "zod";
+import {
+  requestIdentity,
+  sharedAccess,
+  accessFailure,
+} from "@/lib/auth/access";
+import { withProfileFiles } from "@/lib/auth/profile-capability";
+import { isAccessError } from "thesidedoor-core/access";
+import { FileLockBusyError } from "thesidedoor-core/storage";
+import { readBoundedJsonOrNull } from "@/lib/bounded-request";
+import {
+  acceptInboxCapture,
+  CaptureOwnershipError,
+  discardInboxCapture,
+} from "@/lib/library/papers";
+import { rebuildIndex } from "@/lib/library/index-db";
+import { isValidSlug } from "@/lib/library/slug";
+
+export const dynamic = "force-dynamic";
+
+interface Params {
+  params: Promise<{ slug: string }>;
+}
+
+const slugSchema = z.string().refine(isValidSlug);
+const acceptSchema = z.object({ topic: slugSchema }).strict();
+
+export async function PATCH(request: NextRequest, { params }: Params) {
+  const admission = await requestIdentity();
+  const profile = admission?.profile;
+  if (!profile || !admission.capability)
+    return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  const parsedParams = slugSchema.safeParse((await params).slug);
+  const body = acceptSchema.safeParse(await readBoundedJsonOrNull(request));
+  if (!parsedParams.success || !body.success) {
+    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  }
+  try {
+    return withProfileFiles(
+      sharedAccess().identity,
+      admission.capability,
+      () => {
+        const paper = acceptInboxCapture(
+          parsedParams.data,
+          body.data.topic,
+          profile.username,
+        );
+        rebuildIndex();
+        return NextResponse.json({
+          href: `/paper/${paper.topic}/${paper.slug}`,
+        });
+      },
+    );
+  } catch (error) {
+    if (isAccessError(error) || error instanceof FileLockBusyError)
+      return accessFailure(error);
+    return NextResponse.json(
+      {
+        error:
+          error instanceof CaptureOwnershipError
+            ? "This pending paper is no longer available."
+            : error instanceof Error
+              ? error.message
+              : "The paper could not be filed.",
+      },
+      { status: error instanceof CaptureOwnershipError ? 404 : 500 },
+    );
+  }
+}
+
+export async function DELETE(_request: NextRequest, { params }: Params) {
+  const admission = await requestIdentity();
+  const profile = admission?.profile;
+  if (!profile || !admission.capability)
+    return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  const parsedParams = slugSchema.safeParse((await params).slug);
+  if (!parsedParams.success) {
+    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  }
+  try {
+    return withProfileFiles(
+      sharedAccess().identity,
+      admission.capability,
+      () => {
+        discardInboxCapture(parsedParams.data, profile.username);
+        rebuildIndex();
+        return NextResponse.json({ ok: true });
+      },
+    );
+  } catch (error) {
+    if (isAccessError(error) || error instanceof FileLockBusyError)
+      return accessFailure(error);
+    return NextResponse.json(
+      {
+        error:
+          error instanceof CaptureOwnershipError
+            ? "This pending paper is no longer available."
+            : "The paper could not be discarded.",
+      },
+      { status: error instanceof CaptureOwnershipError ? 404 : 500 },
+    );
+  }
+}

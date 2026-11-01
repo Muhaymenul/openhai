@@ -1,0 +1,115 @@
+{
+  "name": "papernook",
+  "version": "0.4.0",
+  "private": true,
+  "description": "A self-hosted paper library for capture, annotation, and AI-assisted reading.",
+  "homepage": "https://github.com/affromero/papernook#readme",
+  "bugs": {
+    "url": "https://github.com/affromero/papernook/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/affromero/papernook.git"
+  },
+  "license": "MIT",
+  "author": "Andres Romero <me@afromero.co>",
+  "scripts": {
+    "build": "node scripts/sharing/build.mjs && node scripts/build-offline.mjs && next build && node scripts/sidedoor/build-access.mjs && node scripts/prepare-runtime.mjs && node scripts/assert-standalone-safe.mjs",
+    "build:chrome": "node scripts/extension/build-chrome.mjs",
+    "build:safari": "./scripts/safari/build.sh",
+    "build:safari:ipad-simulator": "bash ./scripts/safari/build-ipad-simulator.sh",
+    "ci": "npm run lint && npm run format:check && npm run typecheck && npm run test && npm run build",
+    "dev": "node scripts/sharing/build.mjs && node scripts/build-offline.mjs && next dev",
+    "format:check": "prettier --check .",
+    "postinstall": "node scripts/patch-tldraw-font-manager.mjs && node scripts/vendor-three.mjs",
+    "lint": "eslint",
+    "release:chrome": "npm run build:chrome && chrome-webstore-upload upload --source build/papernook-chrome.zip",
+    "release:chrome:publish": "chrome-webstore-upload publish",
+    "release:safari": "npm run build:safari && ./scripts/safari/upload.sh",
+    "screenshots": "playwright test --update-snapshots",
+    "start": "next start",
+    "test": "vitest run",
+    "test:chrome": "npm run build:chrome && node tests/chrome.e2e.mjs",
+    "test:e2e": "playwright test",
+    "test:passkey": "playwright test --config=playwright.passkey.config.ts",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix --max-warnings 0"
+    ],
+    "*.{ts,tsx,js,jsx,json,md,css,yaml,yml}": [
+      "prettier --write"
+    ],
+    "package.json": [
+      "sort-package-json"
+    ]
+  },
+  "overrides": {
+    "braces": "https://codeload.github.com/affromero/braces/tar.gz/ab55ec393269eeed9af90b2ae9a7c6faa41064df",
+    "katex": "$katex",
+    "postcss": "^8.5.17",
+    "thesidedoor-core": {
+      "zod": "$zod"
+    }
+  },
+  "dependencies": {
+    "@citation-js/core": "^0.9.0",
+    "@citation-js/plugin-bibtex": "^0.9.0",
+    "@citation-js/plugin-csl": "^0.9.0",
+    "@citation-js/plugin-ris": "^0.9.0",
+    "@tldraw/tlschema": "5.5.2",
+    "better-sqlite3": "^13.0.3",
+    "chokidar": "^5.0.0",
+    "cytoscape": "^3.34.4",
+    "cytoscape-fcose": "^2.2.0",
+    "html-to-text": "^10.0.1",
+    "katex": "^0.19.0",
+    "lucide-react": "^1.59.0",
+    "next": "16.4.3",
+    "openai": "^7.36.0",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.4.299",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-markdown": "^10.1.0",
+    "rehype-highlight": "^7.0.2",
+    "rehype-katex": "^7.0.1",
+    "rehype-stringify": "^10.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.2",
+    "thesidedoor": "0.5.5",
+    "thesidedoor-core": "0.5.5",
+    "three": "^0.186.1",
+    "tldraw": "^5.5.2",
+    "undici": "^8.12.2",
+    "unified": "^11.0.5",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/hast": "^3.0.5",
+    "@types/html-to-text": "^9.0.4",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "chrome-webstore-upload-cli": "4.0.2",
+    "esbuild": "^0.28.2",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "16.4.3",
+    "knip": "6.41.0",
+    "lint-staged": "^17.6.0",
+    "playwright": "1.64.1",
+    "prettier": "^3.9.10",
+    "sort-package-json": "^4.1.0",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

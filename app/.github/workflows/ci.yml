@@ -1,0 +1,124 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      - run: node scripts/security/audit.mjs
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run build
+      - run: node scripts/assert-standalone-safe.mjs
+      # webkit too: the reader ships to iPads and Macs, and the Safari-only
+      # smoke test in tests/e2e/safari-reader.spec.ts runs on that engine.
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npm run test:chrome
+      - run: npm run test:e2e
+
+  container:
+    needs: ci
+    runs-on: ubuntu-latest
+    # Pushing the smoke-tested image to GHCR is what keeps the production
+    # server out of the build business entirely — it pulls this exact
+    # image instead of compiling one on a 75G disk.
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - run: docker build --tag papernook:ci .
+      - name: Smoke-test hardened runtime
+        run: |
+          docker run --detach --name papernook-ci \
+            --publish 127.0.0.1:3000:3000 \
+            --env AI_PROVIDER=openai \
+            --env OPENAI_API_KEY=test-only \
+            --env SESSION_SECRET=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef \
+            papernook:ci
+          trap 'docker rm --force papernook-ci >/dev/null 2>&1 || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:3000/api/v1/health >/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              docker logs papernook-ci
+              exit 1
+            fi
+            sleep 1
+          done
+          test "$(docker exec papernook-ci awk '/^Uid:/{print $2}' /proc/1/status)" = "1000"
+          claim_output=$(docker exec --user node papernook-ci node scripts/access.cjs claim)
+          claim_code=$(printf '%s\n' "$claim_output" | node -e \
+            'let value="";process.stdin.on("data",chunk=>value+=chunk).on("end",()=>process.stdout.write(JSON.parse(value).code))')
+          claim_body=$(CLAIM_CODE="$claim_code" node -e \
+            'process.stdout.write(JSON.stringify({token:process.env.CLAIM_CODE,name:"CI Owner",password:"ci-access-password-unique",mode:"household"}))')
+          curl --fail-with-body --show-error --silent --cookie-jar /tmp/papernook-ci.cookies \
+            --header 'Origin: http://localhost:3000' \
+            --header 'Content-Type: application/json' \
+            --data "$claim_body" http://localhost:3000/api/v1/access/claim >/dev/null
+          owner_username=$(curl --fail-with-body --show-error --silent \
+            --cookie /tmp/papernook-ci.cookies http://localhost:3000/api/v1/profiles | node -e \
+            'let value="";process.stdin.on("data",chunk=>value+=chunk).on("end",()=>{const profiles=JSON.parse(value).profiles;if(profiles.length!==1)process.exit(1);process.stdout.write(profiles[0].username)})')
+          selection_body=$(OWNER_USERNAME="$owner_username" node -e \
+            'process.stdout.write(JSON.stringify({username:process.env.OWNER_USERNAME}))')
+          curl --fail-with-body --show-error --silent \
+            --cookie /tmp/papernook-ci.cookies \
+            --cookie-jar /tmp/papernook-ci.cookies \
+            --header 'Origin: http://localhost:3000' \
+            --header 'Content-Type: application/json' \
+            --data "$selection_body" http://localhost:3000/api/v1/session >/dev/null
+          test "$(curl --silent --cookie /tmp/papernook-ci.cookies --output /dev/null --write-out '%{http_code}' http://localhost:3000/settings)" = "200"
+          test "$(docker exec papernook-ci stat -c '%u:%g' /data/identity.json)" = "1000:1000"
+          test -z "$(docker exec papernook-ci sh -c \
+            'find /app -maxdepth 3 \( -name ".env*" -o -name src -o -name tests -o -name docs -o -name AGENTS.md -o -name CLAUDE.md \) -print')"
+
+      # Only after the smoke test above: an image that fails it never
+      # reaches the registry, so `pull` on the server can only ever land on
+      # a container that booted, ran as uid 1000, and served /api/v1/health.
+      # The runner is amd64, the same architecture as the server.
+      - name: Publish the verified image to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          IMAGE=ghcr.io/${{ github.repository_owner }}/papernook
+          SHA=$(git rev-parse --short HEAD)
+          printf '%s' "$GH_TOKEN" |
+            docker login ghcr.io -u '${{ github.actor }}' --password-stdin
+          # Deploys pin the sha tag; :main is the convenience pointer.
+          docker tag papernook:ci "$IMAGE:$SHA"
+          docker tag papernook:ci "$IMAGE:main"
+          docker push "$IMAGE:$SHA"
+          docker push "$IMAGE:main"
+
+      # An image per commit is what lets a deploy pin a sha and roll back to
+      # one, but main moves ~8 times a day: without this the version list
+      # grows without end. Ten covers every commit a rollback would
+      # realistically reach for.
+      - name: Prune old image versions
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5
+        with:
+          package-name: papernook
+          package-type: container
+          min-versions-to-keep: 10

@@ -1,0 +1,52 @@
+/* User-installed faces remain on the local Windows computer. */
+@font-face {
+  font-family: "Michelangelus";
+  src: local("Michelangelus Regular"), local("Michelangelus-Regular");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Michelangelus";
+  src: local("Michelangelus Bold"), local("Michelangelus-Bold");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Michelangelus";
+  src: local("Michelangelus Italic"), local("Michelangelus-Italic");
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Michelangelus";
+  src: local("Michelangelus Bold Italic"), local("Michelangelus-BoldItalic");
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "STSong";
+  src: local("STSong"), local("华文宋体");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+/* Redistributable fallback: Adobe Source Han Serif CN, SIL OFL 1.1. */
+@font-face {
+  font-family: "Source Han Serif SC";
+  src: url("/vendor/research-fonts/SourceHanSerifCN-VF.otf.woff2")
+    format("woff2");
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+}
+
+:root {
+  --font-research-serif:
+    "Michelangelus", "Times New Roman", "STSong", "华文宋体",
+    "Source Han Serif SC", "Noto Serif SC", "Songti SC", serif;
+}

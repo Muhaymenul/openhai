@@ -1,0 +1,94 @@
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
+
+# papernook
+
+Self-hosted paper library: one-tap capture from Safari/Chrome, iPad Pencil
+annotation over WebDAV, per-paper AI chats through the user's own agent.
+Architecture diagram (code-accurate) in README.md.
+
+## Pull request workflow
+
+- Before opening or updating a PR, read `.github/PULL_REQUEST_TEMPLATE.md` and
+  fill every applicable section, including when using the GitHub CLI or API.
+  Use the specialized template when one applies.
+- Every PR, including documentation and dependency updates, must link a real
+  tracking issue. Search and reuse an existing issue, or open one describing
+  the problem, expected behavior, and acceptance criteria before opening the PR.
+- Use `Closes #123` only when the PR fully resolves the issue. Use
+  `Related to #123` for partial work and list the remaining tasks.
+- Keep the issue and PR consistent with the final scope and validation results.
+  Follow the session's authorization rules for publishing or editing them.
+  An inspection-only request does not authorize creating an issue or PR.
+- Record the author's actual review-assistance preference. Do not infer consent
+  to AI-assisted follow-up work or merging.
+
+## Core invariants (do not break)
+
+- **The filesystem is the source of truth.** Two trees:
+  `data/papers/<topic>/<slug>.pdf` (+ `<slug>.exercises.pdf`) is the
+  WebDAV-shared annotatable artifact; `data/library/<topic>/<slug>/` is the
+  app-private companion (meta.json, summary.md, text.txt,
+  chats/<username>/*.jsonl, crops/, canvas.json, exercises/). Unconfirmed
+  captures live in `data/library/_inbox/<slug>/` with the PDF _inside_ the
+  companion dir. Nothing unconfirmed may ever surface over WebDAV.
+- **SQLite (`data/index.db`) is a rebuildable index, never truth.** Any query
+  is only as fresh as the last `rebuildIndex()`; deleting the DB must always
+  be safe. The chokidar scanner reconciles from disk; disk always wins.
+- **The AI provider is never hardcoded.** The owner selects a provider in
+  browser setup or Settings. A ready CLI can be selected automatically on the
+  owner welcome page when no provider is configured. The selection lives in
+  `data/identity.json`; `AI_PROVIDER` does not select it. SSH modes use
+  `CLAUDE_CODE_SSH_HOST` / `CODEX_SSH_HOST`. All provider calls go through
+  `src/lib/agent/registry.ts`; never spawn a CLI or hit an AI API from feature
+  code.
+- **Per-account privacy**: chats and capture tokens belong to a profile;
+  the paper library, annotations, and canvases are shared. WebDAV serves
+  `data/papers` ONLY (docker-compose); never widen it.
+- **PDF rewrites** (expand.ts) must be atomic (tmp + rename), grow only on
+  far edges (origin fixed, existing ink coordinates must never shift), and
+  respect the recent-write guard (iPad may be mid-save).
+- **Slugs are the path-safety boundary**: every topic/slug/username that
+  touches a path goes through `assertSlug`/`isValidSlug`
+  (`src/lib/library/slug.ts`).
+
+## Layout
+
+| Where              | What                                                                                                                                  |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/library/` | papers, chats, index-db, scanner, slug, exercises, expand, chat-context, graph, bibliography/, positions/, citations/, context/, pdf/ |
+| `src/lib/agent/`   | provider registry, CLI/API/OpenAI-compatible local clients, attachments (images per transport), web/ tool loop                        |
+| `src/lib/capture/` | normalize (URL matrix), download (polite fetch), analyze (agent filing), discover (related work), jobs/, zotero                       |
+| `src/lib/auth/`    | users (profiles on disk), session (HMAC cookies), gate (instance password + invites), rate-limit, request-security, avatars           |
+| `src/lib/canvas/`  | tldraw license config and startup checks for the per-paper canvas                                                                     |
+| `src/app/add/`     | token-authed capture endpoint + logged-out HTML confirmation pages                                                                    |
+| `src/app/api/v1/`  | session-authed JSON APIs (Zod-validated inputs)                                                                                       |
+| `src/components/`  | CSS Modules only; no Tailwind, no inline styles                                                                                       |
+
+## Commands
+
+```bash
+npm run dev            # local dev
+npm run ci             # lint + typecheck + vitest + build (run before every commit)
+pre-commit install --install-hooks   # two-tier gate (commit: hygiene+lint+tsc; push: test+build+e2e)
+npx playwright install --with-deps chromium webkit   # e2e prerequisite; the push gate adds ~1-2 min and needs port 3107 free
+```
+
+## Rules
+
+- TypeScript strict; no `any`. Zod on every API input. Server Components by
+  default; `"use client"` only when required.
+- Tests are behavioral, mock only at system boundaries (spawn/ssh/fetch/fs
+  temp dirs); see `tests/`. Update tests in the same change as source.
+- Files < 1000 lines; ≤ 10 new files per directory (pre-commit enforces both).
+- Commit style: `area: imperative summary` + Problem/Approach/Result body.
+  No Conventional Commits, no Co-Authored-By.
+- better-sqlite3 stays in `serverExternalPackages` and compiles inside the
+  Docker image; never copy a macOS-built binary.

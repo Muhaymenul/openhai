@@ -1,0 +1,106 @@
+.titlebar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  width: 100%;
+}
+.titlebar h1 {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 550;
+  line-height: 1.4;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  letter-spacing: 0;
+  margin: 0;
+}
+.titlebar .back,
+.information > summary {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  border-radius: 3px;
+  cursor: pointer;
+  color: #626974;
+}
+.titlebar .back:hover,
+.information > summary:hover,
+.information[open] > summary {
+  color: #171a1f;
+  background: #f0f2f5;
+}
+.information {
+  position: static;
+  flex-shrink: 0;
+}
+.information > summary {
+  list-style: none;
+}
+.information > summary::-webkit-details-marker {
+  display: none;
+}
+.information > summary:focus-visible,
+.titlebar .back:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 1px;
+}
+.card {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 390px;
+  max-width: calc(100vw - 32px);
+  padding: 18px;
+  border: 1px solid #dedfe2;
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: 0 8px 28px #14171c1f;
+  white-space: normal;
+  color: #252a31;
+  letter-spacing: 0;
+}
+.card h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+  line-height: 1.6;
+  font-weight: 600;
+}
+.card dl,
+.card dd {
+  margin: 0;
+}
+.card dl > div {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  margin: 6px 0;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.card dt {
+  color: #7b818a;
+}
+.card dd {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 750px) {
+  .card {
+    position: fixed;
+    top: 52px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+  }
+}

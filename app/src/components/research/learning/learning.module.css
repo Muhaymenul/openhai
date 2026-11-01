@@ -1,0 +1,235 @@
+.paperTitle {
+  color: #48515c;
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0 0 18px;
+  overflow-wrap: anywhere;
+}
+.hint {
+  color: #77808b;
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 14px 0 0;
+}
+.annotationChoices {
+  padding: 10px 12px;
+  margin: 8px 0 16px;
+  border: 1px solid #dde2e8;
+  max-height: 210px;
+  overflow: auto;
+}
+.annotationChoices legend {
+  padding: 0 5px;
+  font-size: 13px;
+}
+.annotationChoices label {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  margin: 10px 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.annotationChoices input {
+  flex: 0 0 auto;
+  margin-top: 4px;
+}
+.editorTabs,
+.noteTools,
+.explanationActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.editorTabs {
+  margin: 10px 0;
+}
+.editorTabs span {
+  color: #818995;
+  margin-left: auto;
+  font-size: 12px;
+}
+.editorTabs button,
+.noteTools button,
+.explanationActions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 7px 10px;
+  border: 1px solid #dfe4e9;
+  background: #fff;
+  color: #465364;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.editorTabs button[aria-pressed="true"] {
+  background: #eef3f8;
+  color: #1c496d;
+}
+.noteTools {
+  margin: 12px 0;
+}
+.noteTools button:hover,
+.explanationActions button:hover {
+  background: #f3f6f9;
+}
+.noteTools button:disabled,
+.explanationActions button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.noteBody {
+  width: 100%;
+  resize: vertical;
+  min-height: 230px;
+  max-height: 47dvh;
+  padding: 14px;
+  border: 1px solid #d9dee5;
+  background: #fff;
+  color: #28323e;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.85;
+}
+.notePreview {
+  min-height: 230px;
+  max-height: 47dvh;
+  overflow: auto;
+  padding: 10px 0;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.sourceRow {
+  margin-top: 12px;
+}
+.error {
+  color: #9c3529;
+  background: #fff6f4;
+  border: 1px solid #e8c6c0;
+  padding: 9px 12px;
+  font-size: 13px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.explanationActions {
+  margin: 12px 0;
+}
+.editorTabs button:focus-visible,
+.noteTools button:focus-visible,
+.explanationActions button:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 3px;
+}
+@media (max-width: 600px) {
+  .noteBody,
+  .notePreview {
+    max-height: 42dvh;
+  }
+  .noteTools button,
+  .explanationActions button {
+    min-height: 36px;
+  }
+}
+.draftHint {
+  color: #718092;
+  margin: 8px 0 12px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.draftWarning {
+  margin: 10px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid #e5d7b9;
+  background: #fbf8f1;
+  color: #715d38;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.draftWarning p {
+  margin: 0 0 8px;
+}
+.draftWarning details {
+  margin: 8px 0;
+}
+.draftWarning summary,
+.draftShelf summary {
+  cursor: pointer;
+}
+.draftWarning pre {
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+}
+.draftWarning button,
+.draftShelf button,
+.error button {
+  margin: 4px 8px 0 0;
+  padding: 4px 8px;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.draftWarning button:disabled,
+.draftShelf button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.saveShortcut {
+  margin-right: auto;
+  color: #8a929c;
+  font-size: 12px;
+}
+.draftShelf {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 1px solid #e0e5ec;
+  background: #f8fafc;
+  color: #5b6a7b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.draftShelf summary span {
+  margin-left: 8px;
+  color: #919ba6;
+}
+.draftShelf ul {
+  padding: 0;
+  margin: 10px 0 0;
+  list-style: none;
+}
+.draftShelf li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid #e7ecf2;
+}
+.draftShelf li > div {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.draftShelf strong,
+.draftShelf li span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.draftShelf li span {
+  color: #8a96a3;
+  font-size: 12px;
+}
+.draftWarning button:focus-visible,
+.draftShelf button:focus-visible,
+.error button:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 3px;
+}

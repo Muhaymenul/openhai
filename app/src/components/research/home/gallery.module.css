@@ -1,0 +1,174 @@
+.gallery {
+  --gallery-ground: #faf9f6;
+  position: relative;
+  flex: 1 1 0;
+  min-height: 340px;
+  width: 100%;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--gallery-ground);
+}
+.stageButton {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  padding: 0;
+  background: transparent;
+  touch-action: manipulation;
+}
+.stageButton:focus-visible {
+  outline: 2px solid #505b65;
+  outline-offset: -6px;
+}
+.mainFrame,
+.leftWing,
+.rightWing {
+  position: absolute;
+  display: block;
+  overflow: hidden;
+  background: var(--gallery-ground);
+  box-shadow: 0 16px 32px #362d201a;
+  will-change: transform;
+}
+.mainFrame {
+  inset: 22px 7% 24px;
+  z-index: 2;
+  animation: gallery-main-drift 14s ease-in-out infinite alternate;
+}
+.leftWing,
+.rightWing {
+  width: 26%;
+  height: 64%;
+  z-index: 1;
+}
+.leftWing {
+  left: -7%;
+  top: 23%;
+  animation: gallery-left-drift 16s ease-in-out infinite alternate;
+}
+.rightWing {
+  right: -7%;
+  top: 8%;
+  animation: gallery-right-drift 17s ease-in-out infinite alternate;
+}
+.mainImage,
+.wingImage {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  user-select: none;
+}
+.outgoing {
+  opacity: 1;
+  z-index: 0;
+}
+.incoming {
+  opacity: 0;
+  z-index: 1;
+}
+.mainImage[data-artwork="athens"],
+.wingImage[data-artwork="athens"] {
+  object-position: 50% 62%;
+}
+.mainImage[data-artwork="disputa"],
+.wingImage[data-artwork="disputa"] {
+  object-position: 50% 73%;
+}
+.mainImage[data-artwork="parnassus"],
+.wingImage[data-artwork="parnassus"] {
+  object-position: 50% 55%;
+}
+.mainImage[data-artwork="heliodorus"],
+.wingImage[data-artwork="heliodorus"] {
+  object-position: 50% 62%;
+}
+.mainImage[data-artwork="keys"],
+.wingImage[data-artwork="keys"] {
+  object-position: 50% 69%;
+}
+.mainImage[data-artwork="levi"],
+.wingImage[data-artwork="levi"] {
+  object-position: 50% 55%;
+}
+.mainImage[data-artwork="mark"],
+.wingImage[data-artwork="mark"] {
+  object-position: 50% 60%;
+}
+.mainImage[data-artwork="supper"],
+.wingImage[data-artwork="supper"] {
+  object-position: 50% 55%;
+}
+.paused .mainFrame,
+.paused .leftWing,
+.paused .rightWing {
+  animation-play-state: paused;
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+@keyframes gallery-main-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, -6px, 0);
+  }
+}
+@keyframes gallery-left-drift {
+  from {
+    transform: translate3d(0, 0, 0) rotate(-5deg);
+  }
+  to {
+    transform: translate3d(2px, -9px, 0) rotate(-4deg);
+  }
+}
+@keyframes gallery-right-drift {
+  from {
+    transform: translate3d(0, 0, 0) rotate(5deg);
+  }
+  to {
+    transform: translate3d(-2px, 9px, 0) rotate(4deg);
+  }
+}
+@media (max-width: 600px) {
+  .gallery {
+    min-height: 300px;
+  }
+  .mainFrame {
+    inset: 18px 5% 20px;
+  }
+  .leftWing,
+  .rightWing {
+    width: 34%;
+    height: 52%;
+  }
+  .leftWing {
+    left: -18%;
+    top: 31%;
+  }
+  .rightWing {
+    right: -18%;
+    top: 10%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mainFrame,
+  .leftWing,
+  .rightWing {
+    animation: none;
+    will-change: auto;
+  }
+}

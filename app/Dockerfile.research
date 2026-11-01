@@ -1,0 +1,23 @@
+FROM public.ecr.aws/docker/library/node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da AS deps
+WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ ca-certificates poppler-utils qpdf ghostscript fonts-noto-cjk && rm -rf /var/lib/apt/lists/*
+COPY package.json package-lock.json ./
+COPY scripts/patch-tldraw-font-manager.mjs scripts/vendor-three.mjs scripts/three-sandbox.template.html ./scripts/
+RUN npm ci --ignore-scripts --no-audit --no-fund && npm rebuild better-sqlite3 thesidedoor-flock
+RUN node scripts/patch-tldraw-font-manager.mjs && node scripts/vendor-three.mjs
+
+FROM deps AS build
+COPY . .
+ENV RESEARCH_LOCAL_MODE=1
+RUN npm run build
+
+FROM public.ecr.aws/docker/library/node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da AS runtime
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates poppler-utils qpdf ghostscript fonts-noto-cjk && rm -rf /var/lib/apt/lists/*
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 RESEARCH_LOCAL_MODE=1 PAPERNOOK_DATA_DIR=/data RESEARCH_DATA_DIR=/data/research HOSTNAME=0.0.0.0 PORT=3000
+COPY --from=build /app/.next/runtime ./
+COPY --from=build /app/.next/static ./.next/static
+COPY --from=build /app/public ./public
+EXPOSE 3000
+CMD ["node", "server.js"]

@@ -1,0 +1,35 @@
+# Custom-domain opt-in: add these blocks to the VPS Caddyfile. In .env, set
+# PAPERNOOK_WEBDAV_URL, SESSION_SECRET,
+# APP_HOST=127.0.0.1, and WEBDAV_HOST=127.0.0.1.
+# Private-only Tailscale setups do not need Caddy or the public auth settings.
+
+papernook.example.com {
+	encode gzip
+	# Must stay above MAX_PDF_BYTES (100 MB in src/lib/pdf-limits.ts) plus
+	# request overhead, or Caddy rejects an annotation save on a large paper
+	# before the app's own limit and error message can apply.
+	request_body {
+		max_size 105MB
+	}
+	header {
+		-Server
+	}
+
+	# Papernook enforces global request limits plus per-IP and per-account auth
+	# backoff. For high traffic, add edge rate limiting or fail2ban too.
+	#
+	# The per-IP lockouts key on the LAST X-Forwarded-For entry (see
+	# TRUSTED_PROXY_HOPS). Only trust that header from Caddy itself: strip any
+	# client-supplied forwarding headers so the lockout cannot be bypassed by
+	# spoofing them, then let reverse_proxy append the real client IP.
+	request_header -X-Forwarded-For
+	request_header -X-Real-IP
+	reverse_proxy localhost:3000 {
+		header_up X-Real-IP {remote_host}
+	}
+}
+
+# WebDAV for PDF Expert: its own subdomain, its own basic-auth (rclone).
+dav-papernook.example.com {
+	reverse_proxy localhost:8080
+}

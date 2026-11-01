@@ -1,0 +1,301 @@
+.root {
+  line-height: 1.55;
+  word-break: break-word;
+}
+
+.root > :first-child {
+  margin-top: 0;
+}
+
+.root > :last-child {
+  margin-bottom: 0;
+}
+
+.root a {
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+.root a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.root a:focus-visible {
+  border-radius: 2px;
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+.root p,
+.root ul,
+.root ol,
+.root blockquote {
+  margin: 0.5em 0;
+}
+
+.root ul,
+.root ol {
+  padding-left: 1.4em;
+}
+
+.collapsibleList {
+  margin: 0.5em 0;
+  border: 1px solid rgba(127, 127, 127, 0.25);
+  border-radius: 8px;
+  padding: 0.35em 0.8em;
+}
+
+.collapsibleList > summary {
+  cursor: pointer;
+  color: inherit;
+  font-weight: 650;
+}
+
+.collapsibleList > ol {
+  margin-bottom: 0.25em;
+}
+
+.collapsibleSection {
+  margin: 0.8em 0;
+  border-bottom: 1px solid rgba(127, 127, 127, 0.35);
+  padding-bottom: 0.8em;
+}
+
+.collapsibleSection > summary {
+  cursor: pointer;
+  list-style-position: outside;
+}
+
+.collapsibleSection > summary h1,
+.collapsibleSection > summary h2,
+.collapsibleSection > summary h3,
+.collapsibleSection > summary h4,
+.collapsibleSection > summary h5,
+.collapsibleSection > summary h6 {
+  display: inline;
+}
+
+.root h1,
+.root h2,
+.root h3,
+.root h4 {
+  margin: 0.8em 0 0.4em;
+  font-size: 1.05em;
+  line-height: 1.3;
+}
+
+.root code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.9em;
+  background: rgba(127, 127, 127, 0.15);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+
+.codeFrame {
+  margin: 0.6em 0;
+  overflow: hidden;
+  border: 1px solid #343836;
+  border-radius: 10px;
+  background: #171a19;
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.04),
+    0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.codeHeader {
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.85rem;
+  border-bottom: 1px solid #303431;
+  color: #9fa8a1;
+  background: #202321;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.copyCodeWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.copyCode {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.34rem;
+  min-height: 22px;
+  padding: 0 0.42rem;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: #939d96;
+  background: transparent;
+  font: inherit;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+.copyCode svg {
+  width: 12px;
+  height: 12px;
+  stroke-width: 1.8;
+}
+
+.copyCode:hover {
+  border-color: #464c48;
+  color: #e4e8e5;
+  background: #292d2a;
+}
+
+.copyCode:focus-visible {
+  outline: 2px solid #9fd3aa;
+  outline-offset: 2px;
+}
+
+.copyCode[data-state="copied"] {
+  color: #9fd3aa;
+}
+
+.copyCode[data-state="error"] {
+  color: #ff8f70;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.codeFrame pre {
+  margin: 0;
+  padding: 0.9em 1em 1em;
+  overflow-x: auto;
+  color: #e4e8e5;
+  background: transparent;
+  tab-size: 2;
+}
+
+.codeFrame pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-size: 0.84em;
+  line-height: 1.62;
+}
+
+.codeFrame :global(.hljs-comment),
+.codeFrame :global(.hljs-quote) {
+  color: #6a9955;
+}
+
+.codeFrame :global(.hljs-keyword),
+.codeFrame :global(.hljs-selector-tag),
+.codeFrame :global(.hljs-doctag) {
+  color: #c586c0;
+}
+
+.codeFrame :global(.hljs-title),
+.codeFrame :global(.hljs-title.function_),
+.codeFrame :global(.hljs-section) {
+  color: #dcdcaa;
+}
+
+.codeFrame :global(.hljs-string),
+.codeFrame :global(.hljs-regexp),
+.codeFrame :global(.hljs-addition),
+.codeFrame :global(.hljs-attribute) {
+  color: #ce9178;
+}
+
+.codeFrame :global(.hljs-number),
+.codeFrame :global(.hljs-literal),
+.codeFrame :global(.hljs-symbol),
+.codeFrame :global(.hljs-bullet) {
+  color: #b5cea8;
+}
+
+.codeFrame :global(.hljs-built_in),
+.codeFrame :global(.hljs-type),
+.codeFrame :global(.hljs-meta) {
+  color: #4ec9b0;
+}
+
+.codeFrame :global(.hljs-variable),
+.codeFrame :global(.hljs-params),
+.codeFrame :global(.hljs-property) {
+  color: #9cdcfe;
+}
+
+.codeFrame :global(.hljs-deletion) {
+  color: #ff8e8e;
+}
+
+.root table {
+  margin: 0.6em 0;
+  border-collapse: collapse;
+  border-top: 1px solid rgba(127, 127, 127, 0.35);
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.root th,
+.root td {
+  border: 0;
+  border-bottom: 1px solid rgba(127, 127, 127, 0.35);
+  padding: 0.3em 0.6em;
+}
+
+.root blockquote {
+  border-left: 3px solid rgba(127, 127, 127, 0.4);
+  padding-left: 0.8em;
+  opacity: 0.85;
+}
+
+/* Display math can be wider than a chat bubble. */
+.root :global(.katex-display) {
+  margin: 0.6em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.2em 0;
+}
+
+.root button[data-paper-ref],
+.root button[data-citation] {
+  display: inline;
+  padding: 0 0.1em;
+  margin: 0;
+  border: 0;
+  background: rgba(127, 127, 127, 0.12);
+  border-radius: 4px;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+}
+
+.root button[data-paper-ref]:hover,
+.root button[data-citation]:hover,
+.root button[data-paper-ref]:focus-visible,
+.root button[data-citation]:focus-visible {
+  background: rgba(127, 127, 127, 0.28);
+  text-decoration-style: solid;
+}

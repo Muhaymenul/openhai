@@ -1,0 +1,81 @@
+.card {
+  box-sizing: border-box;
+  max-height: 100%;
+  overscroll-behavior: contain;
+  outline: none;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.heading > span,
+.author {
+  color: #68736c;
+  font-size: 12px;
+}
+
+.card .heading button.close {
+  flex: 0 0 auto;
+  width: 30px;
+  min-height: 30px;
+  margin: 0 0 0 auto;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  font-size: 22px;
+}
+
+.text,
+.quote {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.text {
+  margin: 8px 0 12px;
+}
+
+.quote {
+  margin: 8px 0 12px;
+  padding: 0 0 0 10px;
+  border-left: 2px solid #bac9bf;
+  color: #59675e;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.actions > button {
+  margin: 6px 0 0;
+}
+
+.discardPrompt {
+  padding: 2px 0 6px;
+}
+
+.discardPrompt p {
+  margin: 6px 0 12px;
+  overflow-wrap: anywhere;
+}
+
+:global([data-document-appearance="dark"]) .author,
+:global([data-document-appearance="dark"]) .quote,
+:global(html[data-theme="dark"])
+  .card[data-document-appearance="theme"]
+  .author,
+:global(html[data-theme="dark"])
+  .card[data-document-appearance="theme"]
+  .quote {
+  color: #becbc3;
+}

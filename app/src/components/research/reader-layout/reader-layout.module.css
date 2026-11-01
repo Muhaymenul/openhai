@@ -1,0 +1,453 @@
+.layout.layout {
+  --pdf-width: 64%;
+  --pdf-height: 50%;
+  display: grid;
+  grid-template-columns: minmax(0, var(--pdf-width)) 24px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.layout.layout > section,
+.layout.layout > aside {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+}
+.layout[data-dragging="true"] {
+  user-select: none;
+}
+.rail {
+  position: relative;
+  background: #f0f2f5;
+  border-inline: 1px solid #d7dce3;
+  z-index: 3;
+}
+.separator {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+  touch-action: none;
+  color: #7a8696;
+  outline-offset: -3px;
+}
+.separator:hover,
+.separator:focus-visible,
+.layout[data-dragging="true"] .separator {
+  color: #0066cc;
+  background: #e6edf5;
+}
+.separator:focus-visible {
+  outline: 2px solid #0066cc;
+}
+.rail .resetButton {
+  position: absolute;
+  top: 8px;
+  left: 1px;
+  width: 20px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #c4cbd5;
+  border-radius: 3px;
+  padding: 2px;
+  background: #fff;
+  color: #455365;
+  cursor: pointer;
+  z-index: 1;
+}
+.rail .resetButton:hover {
+  color: #0066cc;
+  border-color: #0066cc;
+}
+.rail .resetButton:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 1px;
+}
+.rowGrip {
+  display: none;
+}
+@media (max-width: 750px) {
+  .layout.layout {
+    flex: none;
+    height: max(640px, calc(100dvh - 48px));
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, var(--pdf-height)) 28px minmax(0, 1fr);
+  }
+  .layout.layout > section,
+  .layout.layout > aside {
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
+  }
+  .rail {
+    border-inline: 0;
+    border-block: 1px solid #d7dce3;
+  }
+  .separator {
+    cursor: row-resize;
+  }
+  .columnGrip {
+    display: none;
+  }
+  .rowGrip {
+    display: block;
+  }
+  .rail .resetButton {
+    top: 2px;
+    left: auto;
+    right: 8px;
+    width: 26px;
+    height: 22px;
+  }
+}
+@media print {
+  .layout.layout {
+    display: block !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .layout.layout > section,
+  .layout.layout > aside {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .rail {
+    display: none !important;
+  }
+}
+
+/* Discrete percent tracks keep dynamic layout out of inline styles. */
+.layout[data-pdf-width="25"] {
+  --pdf-width: 25%;
+}
+.layout[data-pdf-width="26"] {
+  --pdf-width: 26%;
+}
+.layout[data-pdf-width="27"] {
+  --pdf-width: 27%;
+}
+.layout[data-pdf-width="28"] {
+  --pdf-width: 28%;
+}
+.layout[data-pdf-width="29"] {
+  --pdf-width: 29%;
+}
+.layout[data-pdf-width="30"] {
+  --pdf-width: 30%;
+}
+.layout[data-pdf-width="31"] {
+  --pdf-width: 31%;
+}
+.layout[data-pdf-width="32"] {
+  --pdf-width: 32%;
+}
+.layout[data-pdf-width="33"] {
+  --pdf-width: 33%;
+}
+.layout[data-pdf-width="34"] {
+  --pdf-width: 34%;
+}
+.layout[data-pdf-width="35"] {
+  --pdf-width: 35%;
+}
+.layout[data-pdf-width="36"] {
+  --pdf-width: 36%;
+}
+.layout[data-pdf-width="37"] {
+  --pdf-width: 37%;
+}
+.layout[data-pdf-width="38"] {
+  --pdf-width: 38%;
+}
+.layout[data-pdf-width="39"] {
+  --pdf-width: 39%;
+}
+.layout[data-pdf-width="40"] {
+  --pdf-width: 40%;
+}
+.layout[data-pdf-width="41"] {
+  --pdf-width: 41%;
+}
+.layout[data-pdf-width="42"] {
+  --pdf-width: 42%;
+}
+.layout[data-pdf-width="43"] {
+  --pdf-width: 43%;
+}
+.layout[data-pdf-width="44"] {
+  --pdf-width: 44%;
+}
+.layout[data-pdf-width="45"] {
+  --pdf-width: 45%;
+}
+.layout[data-pdf-width="46"] {
+  --pdf-width: 46%;
+}
+.layout[data-pdf-width="47"] {
+  --pdf-width: 47%;
+}
+.layout[data-pdf-width="48"] {
+  --pdf-width: 48%;
+}
+.layout[data-pdf-width="49"] {
+  --pdf-width: 49%;
+}
+.layout[data-pdf-width="50"] {
+  --pdf-width: 50%;
+}
+.layout[data-pdf-width="51"] {
+  --pdf-width: 51%;
+}
+.layout[data-pdf-width="52"] {
+  --pdf-width: 52%;
+}
+.layout[data-pdf-width="53"] {
+  --pdf-width: 53%;
+}
+.layout[data-pdf-width="54"] {
+  --pdf-width: 54%;
+}
+.layout[data-pdf-width="55"] {
+  --pdf-width: 55%;
+}
+.layout[data-pdf-width="56"] {
+  --pdf-width: 56%;
+}
+.layout[data-pdf-width="57"] {
+  --pdf-width: 57%;
+}
+.layout[data-pdf-width="58"] {
+  --pdf-width: 58%;
+}
+.layout[data-pdf-width="59"] {
+  --pdf-width: 59%;
+}
+.layout[data-pdf-width="60"] {
+  --pdf-width: 60%;
+}
+.layout[data-pdf-width="61"] {
+  --pdf-width: 61%;
+}
+.layout[data-pdf-width="62"] {
+  --pdf-width: 62%;
+}
+.layout[data-pdf-width="63"] {
+  --pdf-width: 63%;
+}
+.layout[data-pdf-width="64"] {
+  --pdf-width: 64%;
+}
+.layout[data-pdf-width="65"] {
+  --pdf-width: 65%;
+}
+.layout[data-pdf-width="66"] {
+  --pdf-width: 66%;
+}
+.layout[data-pdf-width="67"] {
+  --pdf-width: 67%;
+}
+.layout[data-pdf-width="68"] {
+  --pdf-width: 68%;
+}
+.layout[data-pdf-width="69"] {
+  --pdf-width: 69%;
+}
+.layout[data-pdf-width="70"] {
+  --pdf-width: 70%;
+}
+.layout[data-pdf-width="71"] {
+  --pdf-width: 71%;
+}
+.layout[data-pdf-width="72"] {
+  --pdf-width: 72%;
+}
+.layout[data-pdf-width="73"] {
+  --pdf-width: 73%;
+}
+.layout[data-pdf-width="74"] {
+  --pdf-width: 74%;
+}
+.layout[data-pdf-width="75"] {
+  --pdf-width: 75%;
+}
+.layout[data-pdf-width="76"] {
+  --pdf-width: 76%;
+}
+.layout[data-pdf-width="77"] {
+  --pdf-width: 77%;
+}
+.layout[data-pdf-width="78"] {
+  --pdf-width: 78%;
+}
+.layout[data-pdf-width="79"] {
+  --pdf-width: 79%;
+}
+.layout[data-pdf-width="80"] {
+  --pdf-width: 80%;
+}
+.layout[data-pdf-height="25"] {
+  --pdf-height: 25%;
+}
+.layout[data-pdf-height="26"] {
+  --pdf-height: 26%;
+}
+.layout[data-pdf-height="27"] {
+  --pdf-height: 27%;
+}
+.layout[data-pdf-height="28"] {
+  --pdf-height: 28%;
+}
+.layout[data-pdf-height="29"] {
+  --pdf-height: 29%;
+}
+.layout[data-pdf-height="30"] {
+  --pdf-height: 30%;
+}
+.layout[data-pdf-height="31"] {
+  --pdf-height: 31%;
+}
+.layout[data-pdf-height="32"] {
+  --pdf-height: 32%;
+}
+.layout[data-pdf-height="33"] {
+  --pdf-height: 33%;
+}
+.layout[data-pdf-height="34"] {
+  --pdf-height: 34%;
+}
+.layout[data-pdf-height="35"] {
+  --pdf-height: 35%;
+}
+.layout[data-pdf-height="36"] {
+  --pdf-height: 36%;
+}
+.layout[data-pdf-height="37"] {
+  --pdf-height: 37%;
+}
+.layout[data-pdf-height="38"] {
+  --pdf-height: 38%;
+}
+.layout[data-pdf-height="39"] {
+  --pdf-height: 39%;
+}
+.layout[data-pdf-height="40"] {
+  --pdf-height: 40%;
+}
+.layout[data-pdf-height="41"] {
+  --pdf-height: 41%;
+}
+.layout[data-pdf-height="42"] {
+  --pdf-height: 42%;
+}
+.layout[data-pdf-height="43"] {
+  --pdf-height: 43%;
+}
+.layout[data-pdf-height="44"] {
+  --pdf-height: 44%;
+}
+.layout[data-pdf-height="45"] {
+  --pdf-height: 45%;
+}
+.layout[data-pdf-height="46"] {
+  --pdf-height: 46%;
+}
+.layout[data-pdf-height="47"] {
+  --pdf-height: 47%;
+}
+.layout[data-pdf-height="48"] {
+  --pdf-height: 48%;
+}
+.layout[data-pdf-height="49"] {
+  --pdf-height: 49%;
+}
+.layout[data-pdf-height="50"] {
+  --pdf-height: 50%;
+}
+.layout[data-pdf-height="51"] {
+  --pdf-height: 51%;
+}
+.layout[data-pdf-height="52"] {
+  --pdf-height: 52%;
+}
+.layout[data-pdf-height="53"] {
+  --pdf-height: 53%;
+}
+.layout[data-pdf-height="54"] {
+  --pdf-height: 54%;
+}
+.layout[data-pdf-height="55"] {
+  --pdf-height: 55%;
+}
+.layout[data-pdf-height="56"] {
+  --pdf-height: 56%;
+}
+.layout[data-pdf-height="57"] {
+  --pdf-height: 57%;
+}
+.layout[data-pdf-height="58"] {
+  --pdf-height: 58%;
+}
+.layout[data-pdf-height="59"] {
+  --pdf-height: 59%;
+}
+.layout[data-pdf-height="60"] {
+  --pdf-height: 60%;
+}
+.layout[data-pdf-height="61"] {
+  --pdf-height: 61%;
+}
+.layout[data-pdf-height="62"] {
+  --pdf-height: 62%;
+}
+.layout[data-pdf-height="63"] {
+  --pdf-height: 63%;
+}
+.layout[data-pdf-height="64"] {
+  --pdf-height: 64%;
+}
+.layout[data-pdf-height="65"] {
+  --pdf-height: 65%;
+}
+.layout[data-pdf-height="66"] {
+  --pdf-height: 66%;
+}
+.layout[data-pdf-height="67"] {
+  --pdf-height: 67%;
+}
+.layout[data-pdf-height="68"] {
+  --pdf-height: 68%;
+}
+.layout[data-pdf-height="69"] {
+  --pdf-height: 69%;
+}
+.layout[data-pdf-height="70"] {
+  --pdf-height: 70%;
+}
+.layout[data-pdf-height="71"] {
+  --pdf-height: 71%;
+}
+.layout[data-pdf-height="72"] {
+  --pdf-height: 72%;
+}
+.layout[data-pdf-height="73"] {
+  --pdf-height: 73%;
+}
+.layout[data-pdf-height="74"] {
+  --pdf-height: 74%;
+}
+.layout[data-pdf-height="75"] {
+  --pdf-height: 75%;
+}

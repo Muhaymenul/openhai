@@ -1,0 +1,957 @@
+.root {
+  position: relative;
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid #c8cbc7;
+  border-radius: 8px;
+  background: #d9dcda;
+  box-shadow: 0 12px 32px rgba(27, 34, 29, 0.12);
+}
+:global(html[data-theme="dark"]) .root[data-document-appearance="theme"],
+.root[data-document-appearance="dark"] {
+  border-color: #444;
+  background: #202020;
+  color-scheme: dark;
+}
+:global(html[data-theme="dark"])
+  .root[data-document-appearance="theme"]
+  .toolbar,
+.root[data-document-appearance="dark"] .toolbar {
+  color: #ededed;
+  background: #1a1a1a;
+  border-color: #444;
+}
+:global(html[data-theme="dark"]) .root[data-document-appearance="theme"] .stage,
+.root[data-document-appearance="dark"] .stage {
+  background: #202020;
+}
+.fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  width: 100vw;
+  height: 100dvh;
+  border: 0;
+  border-radius: 0;
+}
+
+.toolbar {
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr);
+  align-items: center;
+  gap: 1rem;
+  padding: 0 0.8rem;
+  color: #27322b;
+  background: #f4f5f2;
+  border-bottom: 1px solid #c8cbc7;
+  font-size: 0.76rem;
+}
+
+.toolbarGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.toolbarGroup:last-child {
+  justify-content: flex-end;
+}
+
+.toolbar button,
+.originalLink {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 1rem;
+}
+
+.editorTools {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 3px;
+  border: 1px solid #d0d6d0;
+  border-radius: 8px;
+  background: #e9eee9;
+}
+
+.toolbar .editorButton,
+.toolbar .saveButton {
+  width: auto;
+  gap: 0.32rem;
+  padding: 0 0.48rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.editorButton svg,
+.saveButton svg,
+.toolbarGroup svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 1.8;
+}
+
+.toolbar .activeTool {
+  color: #214d3a;
+  background: #dcebe2;
+  border-color: #8cab9b;
+}
+
+:global(html[data-theme="dark"])
+  .root[data-document-appearance="theme"]
+  .editorTools,
+.root[data-document-appearance="dark"] .editorTools {
+  background: #252c28;
+  border-color: #435149;
+}
+
+:global(html[data-theme="dark"])
+  .root[data-document-appearance="theme"]
+  .toolbar
+  button:hover:not(:disabled),
+.root[data-document-appearance="dark"] .toolbar button:hover:not(:disabled),
+:global(html[data-theme="dark"])
+  .root[data-document-appearance="theme"]
+  .originalLink:hover,
+.root[data-document-appearance="dark"] .originalLink:hover {
+  background: #35443b;
+  border-color: #60786a;
+}
+
+:global(html[data-theme="dark"])
+  .root[data-document-appearance="theme"]
+  .toolbar
+  .activeTool,
+:global(html[data-theme="dark"])
+  .root[data-document-appearance="theme"]
+  .toolbar
+  .activeTool:hover:not(:disabled),
+.root[data-document-appearance="dark"] .toolbar .activeTool,
+.root[data-document-appearance="dark"]
+  .toolbar
+  .activeTool:hover:not(:disabled) {
+  background: #dcebe2;
+  border-color: #a8c2b2;
+  color: #214d3a;
+}
+
+.toolbar button:focus-visible,
+.originalLink:focus-visible {
+  outline: 2px solid #679878;
+  outline-offset: 2px;
+}
+
+.toolbar .saveButton {
+  margin-left: 0.2rem;
+  color: #fff;
+  background: #315f4c;
+  border-color: #315f4c;
+}
+
+.toolbar .saveButton:hover {
+  color: #fff;
+  background: #264e3e;
+  border-color: #264e3e;
+}
+
+.toolbar .saveButton:disabled {
+  color: #596b5f;
+  background: transparent;
+  border-color: transparent;
+  opacity: 0.65;
+}
+
+.toolbar .saveIndicator,
+.toolbar .moreToolsButton {
+  width: auto;
+  gap: 5px;
+  padding: 0 7px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.toolbar .saveIndicator {
+  color: #536b5d;
+  background: transparent;
+  font-weight: 400;
+}
+
+.toolbar .saveIndicator:disabled {
+  opacity: 0.8;
+}
+
+.saveIndicator svg {
+  width: 13px;
+  height: 13px;
+}
+
+.saveSpinner {
+  animation: saveSpin 1s linear infinite;
+}
+
+@keyframes saveSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .saveSpinner {
+    animation: none;
+  }
+}
+
+:global(html[data-theme="dark"])
+  .root[data-document-appearance="theme"]
+  .toolbar
+  .saveButton:disabled,
+.root[data-document-appearance="dark"] .toolbar .saveButton:disabled {
+  color: #a4b3a8;
+}
+
+.toolbar button:hover,
+.originalLink:hover {
+  border-color: #bcc2bd;
+  background: #fff;
+}
+
+.toolbar button:disabled {
+  cursor: default;
+  opacity: 0.32;
+}
+
+.pageStatus,
+.zoom {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.hint {
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #68736c;
+  font-family: var(--font-geist-mono), monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.saveStatus {
+  min-height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.75rem;
+  color: #315f4c;
+  background: #eef4ef;
+  border-bottom: 1px solid #c8cbc7;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.saveStatus.unsaved {
+  color: #775c12;
+  background: #fbf4d9;
+}
+
+.remoteUpdate {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  padding: 0.35rem 0.75rem;
+  color: #6f251f;
+  background: #f9e5df;
+  border-bottom: 1px solid #d7a69b;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.remoteUpdate button {
+  min-height: 32px;
+  padding: 0 0.7rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  color: inherit;
+  background: #fff9f6;
+  cursor: pointer;
+  font: inherit;
+}
+
+.stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0)), #d9dcda;
+}
+
+.stage[data-comment-placement="true"] :global(.pdfViewer .page),
+.stage[data-comment-placement="true"] :global(.pdfViewer .page *) {
+  cursor: crosshair !important;
+}
+
+.root[data-controlled-comments="true"]
+  :global(.annotationLayer .popupAnnotation) {
+  display: none !important;
+}
+
+.toolbar .keyboardPlace {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.toolbar .keyboardPlace:focus {
+  position: static;
+  width: auto;
+  height: 32px;
+  padding: 0 0.6rem;
+  overflow: visible;
+  clip-path: none;
+  border: 1px solid #8cab9b;
+  border-radius: 7px;
+  outline: 2px solid #679878;
+  outline-offset: 2px;
+  color: #fff;
+  background: #315f4c;
+  box-shadow: 0 4px 14px rgba(20, 32, 24, 0.25);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@container (max-width: 650px) {
+  .editorTools:has(.keyboardPlace:focus) {
+    flex-wrap: wrap;
+  }
+  .toolbar .keyboardPlace:focus {
+    width: 100%;
+    min-height: 44px;
+  }
+}
+
+.pencilMode {
+  touch-action: none;
+}
+
+.pencilMode :global(.annotationEditorLayer .inkEditorCanvas) {
+  touch-action: none;
+}
+
+.saving .container {
+  pointer-events: none;
+}
+
+.container {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  /* pdf.js gives each annotation an inline z-index that grows per link;
+     isolate so they never stack above the reference preview. */
+  isolation: isolate;
+}
+
+.container :global(.pdfViewer) {
+  padding: 22px 18px 36px;
+}
+
+.container :global(.pdfViewer .page) {
+  margin: 0 auto 18px;
+  border: 1px solid rgba(38, 47, 41, 0.16);
+  box-shadow: 0 5px 22px rgba(24, 31, 26, 0.2);
+}
+
+.container :global(.annotationLayer .linkAnnotation > a:hover) {
+  outline: 2px solid rgba(60, 111, 83, 0.82);
+  background: rgba(60, 111, 83, 0.14);
+}
+
+.status {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  color: #27322b;
+  font-size: 0.9rem;
+}
+
+.preview {
+  position: absolute;
+  z-index: 20;
+  width: min(760px, calc(100% - 2rem));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #1f2822;
+  background: #f7f3e8;
+  border: 1px solid rgba(31, 40, 34, 0.25);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.34);
+}
+
+.previewLeft {
+  left: 1rem;
+}
+
+.previewRight {
+  right: 1rem;
+}
+
+.previewHeader {
+  min-height: 40px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.25rem 0.4rem 0.25rem 0.75rem;
+}
+
+.previewEyebrow {
+  margin-right: auto;
+  color: #315f4c;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.previewLibrary {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid #315f4c;
+  border-radius: 999px;
+  color: #315f4c;
+  background: rgba(49, 95, 76, 0.08);
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Header actions on a cited work: ask the chat about it, capture it. */
+.previewAction {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid rgba(31, 40, 34, 0.3);
+  border-radius: 999px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.previewAction:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* Library lookup in flight: muted so it reads as transient, not an action. */
+.previewChecking {
+  color: #315f4c;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0.55;
+}
+
+.previewActionState {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 18rem;
+  min-width: 0;
+  color: #315f4c;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* The message shrinks and clips; the Retry button beside it never does. */
+.previewActionText {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.previewActionState > .previewAction {
+  flex: none;
+}
+
+.previewActionFailed {
+  color: #8a3b2f;
+}
+
+.previewOpen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgba(31, 40, 34, 0.25);
+  border-radius: 50%;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.close {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(31, 40, 34, 0.25);
+  border-radius: 50%;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.previewPage {
+  position: relative;
+  height: 285px;
+  overflow: hidden;
+  background: #ded9cd;
+  border-top: 1px solid rgba(31, 40, 34, 0.14);
+}
+
+.previewPage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  background: #fff;
+  cursor: pointer;
+}
+
+/* In-paper locator previews have no click action on the crop. */
+.previewPageStatic canvas {
+  cursor: default;
+}
+
+.previewStatus {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 700px) {
+  .toolbar {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.35rem;
+    padding: 0 0.4rem;
+  }
+
+  .hint,
+  .editorButton span,
+  .saveButton span {
+    display: none;
+  }
+
+  .editorTools {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    padding-bottom: 0.35rem;
+  }
+
+  .toolbar .editorButton,
+  .toolbar .saveButton {
+    width: 32px;
+    padding: 0;
+  }
+
+  .preview {
+    left: 0.5rem;
+    right: 0.5rem;
+    bottom: 0.5rem;
+    top: auto;
+    width: auto;
+  }
+
+  .toolbar button,
+  .originalLink,
+  .toolbar .editorButton,
+  .toolbar .saveButton {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* Floats beside a text-layer selection; geometry arrives as custom
+   properties computed from the selection rect (see placeSelectionAsk). */
+.selectionAsk {
+  position: absolute;
+  top: var(--ask-top);
+  left: var(--ask-left);
+  /* Under .preview (20): a reference preview opened while a selection is
+     showing must not be overlapped by the button. */
+  z-index: 19;
+  height: 34px;
+  padding: 0 0.85rem;
+  border: 1px solid #315f4c;
+  border-radius: 999px;
+  color: #fff;
+  background: #315f4c;
+  box-shadow: 0 6px 18px rgba(24, 31, 26, 0.28);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.selectionAsk:hover {
+  background: #264e3e;
+  border-color: #264e3e;
+}
+
+.citationOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.citationHotspot {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.citationHotspot:hover,
+.citationHotspot:focus-visible {
+  outline: 2px solid rgba(60, 111, 83, 0.82);
+  background: rgba(60, 111, 83, 0.14);
+}
+
+.citationOverlayDisabled .citationHotspot {
+  pointer-events: none;
+}
+
+@container (max-width: 1100px) {
+  .toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .editorTools {
+    grid-row: 2;
+    grid-column: 1 / -1;
+  }
+  .hint {
+    display: none;
+  }
+}
+
+@container (max-width: 650px) {
+  .toolbar {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0.25rem 0.4rem;
+    gap: 0.25rem;
+  }
+  .toolbarGroup:first-child {
+    grid-row: 1;
+    justify-content: center;
+  }
+  .toolbarGroup:last-child {
+    grid-row: 2;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .editorTools {
+    grid-row: 3;
+  }
+  .editorButton span,
+  .saveButton span {
+    display: none;
+  }
+  .toolbar .editorButton,
+  .toolbar .saveButton {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+  }
+}
+.commentOverlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.commentDialog {
+  width: 100%;
+  max-height: 100%;
+  overflow: auto;
+  padding: 0.9rem;
+  color: #27322b;
+  background: #f7f8f4;
+  border: 1px solid #a9b7ac;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(20, 32, 24, 0.25);
+  pointer-events: auto;
+  font-size: 0.8rem;
+  color-scheme: light;
+}
+
+.commentDialog label {
+  display: block;
+  font-weight: 700;
+}
+
+.commentDialog textarea {
+  display: block;
+  width: 100%;
+  min-height: 7rem;
+  margin-top: 0.45rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #a9b7ac;
+  border-radius: 6px;
+  color: #1f2822;
+  background: #fff;
+  font: inherit;
+  resize: vertical;
+}
+
+.commentDialog textarea:focus-visible {
+  outline: 2px solid #679878;
+  outline-offset: 1px;
+}
+
+.commentDialog button {
+  min-height: 34px;
+  padding: 0.35rem 0.65rem;
+  margin: 0.6rem 0.35rem 0 0;
+  border: 1px solid #a9b7ac;
+  border-radius: 6px;
+  color: #27322b;
+  background: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.commentDialog button:first-of-type {
+  color: #fff;
+  background: #315f4c;
+  border-color: #315f4c;
+}
+
+/* A single toolbar row leaves the study workspace to the paper. */
+.root[data-compact="true"] .toolbar {
+  display: flex;
+  flex: 0 0 42px;
+  flex-wrap: nowrap;
+  min-height: 42px;
+  height: 42px;
+  max-height: 42px;
+  gap: 6px;
+  padding: 3px 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  scrollbar-width: thin;
+  font-size: 12px;
+}
+.root[data-compact="true"] .toolbar::-webkit-scrollbar {
+  height: 4px;
+}
+.root[data-compact="true"] .toolbarGroup,
+.root[data-compact="true"] .editorTools {
+  flex: none;
+  flex-wrap: nowrap;
+  grid-row: auto;
+  grid-column: auto;
+  justify-content: flex-start;
+  gap: 2px;
+}
+.root[data-compact="true"] .toolbarGroup:last-child {
+  margin-left: auto;
+}
+.root[data-compact="true"] .editorTools {
+  height: 32px;
+  padding: 0 3px;
+  border-radius: 4px;
+}
+.root[data-compact="true"] .hint {
+  display: none;
+}
+.root[data-compact="true"] .toolbar button:not(.keyboardPlace),
+.root[data-compact="true"] .originalLink {
+  flex: none;
+  width: 28px;
+  min-width: 28px;
+  height: 30px;
+  padding: 0;
+  font-size: 14px;
+}
+.root[data-compact="true"] .toolbar .editorButton,
+.root[data-compact="true"] .toolbar .saveButton,
+.root[data-compact="true"] .toolbar .secondaryAction,
+.root[data-compact="true"] .originalLink {
+  width: auto;
+  gap: 4px;
+  padding: 0 5px;
+  font-size: 12px;
+}
+.root[data-compact="true"] .editorButton span,
+.root[data-compact="true"] .saveButton span {
+  display: inline;
+}
+.root[data-compact="true"] .pageStatus,
+.root[data-compact="true"] .zoom {
+  min-width: 40px;
+  text-align: center;
+}
+.root[data-compact="true"] .toolbar .zoom {
+  width: 40px;
+}
+
+.root[data-compact="true"] .toolbar .saveIndicator,
+.root[data-compact="true"] .toolbar .moreToolsButton {
+  width: auto;
+  gap: 4px;
+  padding: 0 5px;
+  font-size: 12px;
+}
+.root[data-compact="true"] .toolbar .keyboardPlace:focus {
+  flex: none;
+  width: auto;
+  min-height: 30px;
+  height: 30px;
+}
+@container (max-width: 850px) {
+  .root[data-compact="true"] .editorButton span,
+  .root[data-compact="true"] .saveButton span,
+  .root[data-compact="true"] .actionLabel {
+    display: none;
+  }
+  .root[data-compact="true"] .toolbar .editorButton,
+  .root[data-compact="true"] .toolbar .saveButton,
+  .root[data-compact="true"] .toolbar .secondaryAction,
+  .root[data-compact="true"] .originalLink {
+    width: 28px;
+    padding: 0;
+  }
+}
+
+.commentDialog button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.root[data-compact="true"][data-simple-tools="true"]
+  .toolbar
+  button:is(.editorButton, .moreToolsButton, .saveIndicator) {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 52px;
+  gap: 5px;
+  padding: 0 7px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.root[data-compact="true"][data-simple-tools="true"]
+  .toolbar
+  button:is(.editorButton, .moreToolsButton, .saveIndicator)
+  svg {
+  flex-shrink: 0;
+}
+
+.root[data-simple-tools="true"] .editorButton span {
+  display: inline;
+}
+
+@container (max-width: 400px) {
+  .root[data-compact="true"][data-simple-tools="true"]
+    .toolbar
+    button:is(.editorButton, .moreToolsButton, .saveIndicator) {
+    min-width: 48px;
+    gap: 3px;
+    padding: 0 4px;
+    font-size: 11px;
+  }
+}
+
+.commentDialog button:focus-visible {
+  outline: 2px solid #679878;
+  outline-offset: 2px;
+}
+
+:global(html[data-theme="dark"])
+  .commentDialog[data-document-appearance="theme"],
+.commentDialog[data-document-appearance="dark"] {
+  color: #ededed;
+  background: #202722;
+  border-color: #65766b;
+  color-scheme: dark;
+}
+
+:global(html[data-theme="dark"])
+  .commentDialog[data-document-appearance="theme"]
+  textarea,
+.commentDialog[data-document-appearance="dark"] textarea {
+  color: #ededed;
+  background: #151c17;
+  border-color: #65766b;
+}
+
+:global(html[data-theme="dark"])
+  .commentDialog[data-document-appearance="theme"]
+  button,
+.commentDialog[data-document-appearance="dark"] button {
+  color: #ededed;
+  background: #303d34;
+  border-color: #65766b;
+}
+
+:global(html[data-theme="dark"])
+  .commentDialog[data-document-appearance="theme"]
+  button:first-of-type,
+.commentDialog[data-document-appearance="dark"] button:first-of-type {
+  color: #fff;
+  background: #315f4c;
+  border-color: #6d9b7f;
+}

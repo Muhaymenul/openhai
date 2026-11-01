@@ -1,0 +1,237 @@
+.root {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.card {
+  max-width: 620px;
+  width: 100%;
+  border: 1px solid rgba(127, 127, 127, 0.22);
+  border-radius: 18px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.hero {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.heroAvatar {
+  border: 3px solid var(--background, #fff);
+  border-radius: 50%;
+  outline: 3px solid
+    color-mix(in oklab, var(--color-primary, #b88a52) 72%, #d7a65a);
+  outline-offset: 1px;
+  box-shadow: 0 6px 18px rgba(31, 40, 34, 0.18);
+}
+
+.heroTitle {
+  margin: 0;
+  font-size: 1.45rem;
+  letter-spacing: -0.01em;
+}
+
+.heroSub {
+  margin: 0.2rem 0 0;
+  opacity: 0.7;
+  font-size: 0.95rem;
+}
+
+.section {
+  border: 1px solid rgba(127, 127, 127, 0.18);
+  border-radius: 14px;
+  padding: 1.1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.dotOk,
+.dotBad {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.dotSpacer {
+  width: 9px;
+  height: 9px;
+  flex: none;
+}
+
+.dotOk {
+  background: #1f8a5b;
+  box-shadow: 0 0 0 3px rgba(31, 138, 91, 0.18);
+}
+
+.dotBad {
+  background: #a42e2b;
+  box-shadow: 0 0 0 3px rgba(164, 46, 43, 0.18);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 1.02rem;
+}
+
+.sectionState {
+  margin-left: auto;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  opacity: 0.55;
+}
+
+.sectionBody {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  opacity: 0.9;
+}
+
+.action {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px dashed rgba(63, 79, 176, 0.55);
+  border-radius: 10px;
+  background: rgba(63, 79, 176, 0.07);
+  text-decoration: none;
+  color: inherit;
+  min-height: 44px;
+  justify-content: center;
+}
+
+.action:hover {
+  background: rgba(63, 79, 176, 0.13);
+}
+
+.actionTitle {
+  font-weight: 650;
+  font-size: 0.95rem;
+}
+
+.actionSub {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.copyRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 40px;
+}
+
+.copyLabel {
+  flex: none;
+  width: 76px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.55;
+}
+
+.copyValue {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  background: rgba(127, 127, 127, 0.1);
+  padding: 0.3rem 0.55rem;
+  border-radius: 7px;
+}
+
+.copyBtn {
+  flex: none;
+  min-height: 34px;
+  padding: 0 0.8rem;
+  border-radius: 8px;
+  border: 1px solid rgba(127, 127, 127, 0.35);
+  background: transparent;
+  color: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.copyBtn:hover {
+  border-color: rgba(63, 79, 176, 0.6);
+}
+
+.primary {
+  align-self: flex-end;
+  min-height: 46px;
+  padding: 0 1.4rem;
+  border-radius: 11px;
+  border: 0;
+  background: #3f4fb0;
+  color: #fff;
+  font-weight: 650;
+  font-size: 0.98rem;
+}
+
+.primary:disabled {
+  opacity: 0.6;
+}
+
+@media (max-width: 560px) {
+  .card {
+    padding: 1.25rem;
+  }
+  .copyLabel {
+    width: 62px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .section {
+    transition: border-color 140ms ease;
+  }
+  .section:hover {
+    border-color: rgba(63, 79, 176, 0.4);
+  }
+}
+
+.steps {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  opacity: 0.9;
+}
+
+.steps li {
+  margin-bottom: 0.25rem;
+}
+
+.compatibility {
+  margin-top: 0.9rem;
+}
+
+.compatibility summary {
+  width: fit-content;
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.compatibility[open] summary {
+  margin-bottom: 0.75rem;
+}

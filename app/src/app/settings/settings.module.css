@@ -1,0 +1,539 @@
+.root {
+  --settings-accent: #8a612f;
+  --settings-accent-contrast: #fff;
+  --settings-accent-soft: color-mix(
+    in oklab,
+    var(--settings-accent) 12%,
+    transparent
+  );
+  --settings-line: rgba(127, 127, 127, 0.22);
+  width: 100%;
+  min-width: 0;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 5rem;
+}
+
+.pageHeader {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 2rem;
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--settings-line);
+}
+
+.pageHeader h1 {
+  margin: 0.25rem 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.4rem, 4vw, 3.35rem);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--settings-accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.intro {
+  max-width: 540px;
+  margin: 0.75rem 0 0;
+  color: color-mix(in oklab, currentColor 65%, transparent);
+  font-size: 1rem;
+}
+
+.dashboardLink,
+.primaryAction,
+.secondaryAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--settings-line);
+  background: transparent;
+  color: inherit;
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
+}
+
+.dashboardLink:hover {
+  border-color: color-mix(in oklab, var(--settings-accent) 58%, transparent);
+  background: var(--settings-accent-soft);
+}
+
+.dashboardLink:focus-visible,
+.primaryAction:focus-visible,
+.secondaryAction:focus-visible,
+.sectionNav a:focus-visible,
+.manualSetup summary:focus-visible,
+.secretPanel summary:focus-visible,
+.revealDetails summary:focus-visible {
+  outline: 2px solid var(--settings-accent);
+  outline-offset: 3px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: clamp(2rem, 4vw, 3.5rem);
+}
+
+.sectionNav {
+  position: sticky;
+  top: 1.5rem;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-top: 2.4rem;
+}
+
+.sectionNav p {
+  margin: 0 0 0.6rem;
+  color: color-mix(in oklab, currentColor 58%, transparent);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sectionNav a {
+  padding: 0.5rem 0.65rem;
+  border-left: 2px solid transparent;
+  color: color-mix(in oklab, currentColor 66%, transparent);
+  font-size: 0.88rem;
+  text-decoration: none;
+  transition:
+    color 120ms ease,
+    border-color 120ms ease,
+    background 120ms ease;
+}
+
+.sectionNav a:hover {
+  border-left-color: var(--settings-accent);
+  background: var(--settings-accent-soft);
+  color: inherit;
+}
+
+.content {
+  min-width: 0;
+}
+
+.section {
+  scroll-margin-top: 1.5rem;
+  padding: 2.5rem 0 1.5rem;
+}
+
+.section + .section {
+  margin-top: 1.75rem;
+  padding-top: 0;
+}
+
+.sectionHeader {
+  position: relative;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 0.75rem;
+  margin: 0 -1rem 1.5rem;
+  padding: 1rem;
+  border-left: 3px solid var(--settings-accent);
+  border-radius: 0 10px 10px 0;
+  background: linear-gradient(
+    90deg,
+    var(--settings-accent-soft) 0%,
+    color-mix(in oklab, var(--settings-accent) 5%, transparent) 52%,
+    transparent 86%
+  );
+}
+
+.section + .section .sectionHeader {
+  padding-top: 1.35rem;
+  border-top: 1px solid var(--settings-line);
+}
+
+.section + .section .sectionHeader::before {
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: calc(34px + 1rem);
+  height: 2px;
+  background: var(--settings-accent);
+  content: "";
+}
+
+.sectionNumber {
+  padding-top: 0.22rem;
+  color: var(--settings-accent);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.45rem, 2.5vw, 1.8rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+.sectionHeader p,
+.subsection > p {
+  max-width: 620px;
+  margin: 0.4rem 0 0;
+  color: color-mix(in oklab, currentColor 62%, transparent);
+  line-height: 1.55;
+}
+
+.setupList {
+  border-top: 1px solid var(--settings-line);
+}
+
+.setupItem {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.7fr) minmax(220px, 1.2fr) auto;
+  gap: 1.5rem;
+  align-items: center;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--settings-line);
+}
+
+.platform {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.platformMark {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  border: 1px solid color-mix(in oklab, var(--settings-accent) 38%, transparent);
+  border-radius: 50%;
+  background: var(--settings-accent-soft);
+  color: var(--settings-accent);
+  font-weight: 750;
+}
+
+.platform p {
+  margin: 0;
+  color: color-mix(in oklab, currentColor 52%, transparent);
+  font-size: 0.78rem;
+}
+
+.platform .platformName {
+  margin: 0;
+  color: inherit;
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+
+.setupCopy {
+  margin: 0;
+  color: color-mix(in oklab, currentColor 70%, transparent);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.primaryAction {
+  border-color: var(--settings-accent);
+  background: var(--settings-accent);
+  color: #fff;
+}
+
+.primaryAction:hover {
+  transform: translateY(-1px);
+  background: color-mix(in oklab, var(--settings-accent) 88%, #000);
+}
+
+.setupActions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.45rem;
+}
+
+.secondaryAction {
+  min-height: 36px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.78rem;
+}
+
+.secondaryAction:hover {
+  border-color: color-mix(in oklab, var(--settings-accent) 58%, transparent);
+  background: var(--settings-accent-soft);
+}
+
+.serverHint {
+  grid-column: 2 / -1;
+  margin: -0.8rem 0 0;
+  color: color-mix(in oklab, currentColor 52%, transparent);
+  font-size: 0.78rem;
+}
+
+.serverHint code,
+.credentials code,
+.manualSetup code {
+  font-family: var(--font-geist-mono), monospace;
+  overflow-wrap: anywhere;
+}
+
+.manualSetup {
+  grid-column: 2 / -1;
+  margin-top: -0.55rem;
+  font-size: 0.88rem;
+}
+
+.manualSetup summary,
+.secretPanel summary,
+.revealDetails summary {
+  width: fit-content;
+  cursor: pointer;
+  color: color-mix(in oklab, currentColor 68%, transparent);
+  font-weight: 600;
+}
+
+.manualSetup ol {
+  display: grid;
+  gap: 0.7rem;
+  margin: 1rem 0 0;
+  padding-left: 1.25rem;
+  line-height: 1.55;
+}
+
+.secretPanel {
+  margin-top: 1rem;
+  padding: 0.8rem 1rem;
+  border-radius: 10px;
+  background: rgba(127, 127, 127, 0.08);
+  font-size: 0.82rem;
+}
+
+.secretPanel > div {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.85rem;
+}
+
+.secretPanel p {
+  margin: 0;
+  color: color-mix(in oklab, currentColor 58%, transparent);
+}
+
+.subsection {
+  margin-left: 42px;
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--settings-line);
+}
+
+.subsection:first-of-type {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.subsection + .subsection {
+  margin-top: 1rem;
+}
+
+.webdav > summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.subsection h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.credentials {
+  display: grid;
+  margin-top: 1rem;
+  border-top: 1px solid var(--settings-line);
+}
+
+.credentials > div {
+  display: grid;
+  grid-template-columns: minmax(100px, 0.25fr) minmax(0, 1fr);
+  gap: 1rem;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--settings-line);
+}
+
+.credentials dt {
+  color: color-mix(in oklab, currentColor 52%, transparent);
+  font-size: 0.82rem;
+}
+
+.credentials dd {
+  min-width: 0;
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.token {
+  display: inline-block;
+  max-width: 100%;
+  word-break: break-all;
+  background: rgba(127, 127, 127, 0.12);
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+  font-family: var(--font-geist-mono), monospace;
+}
+
+.revealDetails {
+  min-width: 0;
+}
+
+.revealDetails .token {
+  margin-top: 0.65rem;
+}
+
+.dangerZone {
+  padding: 1.25rem;
+  border: 1px solid color-mix(in oklab, #c64a42 34%, transparent);
+  border-radius: 12px;
+  background: color-mix(in oklab, #c64a42 5%, transparent);
+}
+
+@media (max-width: 760px) {
+  .root {
+    padding: 2.25rem 1.1rem 4rem;
+  }
+
+  .pageHeader {
+    align-items: start;
+  }
+
+  .layout {
+    display: block;
+  }
+
+  .sectionNav {
+    position: static;
+    flex-direction: row;
+    gap: 0.2rem;
+    margin: 0 -1.1rem;
+    padding: 1rem 1.1rem 0;
+    overflow-x: auto;
+  }
+
+  .sectionNav p {
+    display: none;
+  }
+
+  .sectionNav a {
+    flex: 0 0 auto;
+    border-bottom: 2px solid transparent;
+    border-left: 0;
+  }
+
+  .sectionNav a:hover {
+    border-bottom-color: var(--settings-accent);
+    border-left-color: transparent;
+  }
+
+  .section {
+    padding: 2.25rem 0 1.5rem;
+  }
+
+  .section + .section {
+    margin-top: 1.25rem;
+    padding-top: 0;
+  }
+
+  .setupItem {
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+  }
+
+  .setupCopy {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .serverHint,
+  .manualSetup {
+    grid-column: 1 / -1;
+  }
+
+  .subsection {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .pageHeader {
+    display: block;
+  }
+
+  .headerActions {
+    margin-top: 1.5rem;
+    align-items: flex-start;
+    flex-direction: column-reverse;
+  }
+
+  .headerActions {
+    align-items: flex-start;
+    flex-direction: column-reverse;
+  }
+
+  .setupItem {
+    display: flex;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .primaryAction {
+    align-self: flex-start;
+  }
+
+  .serverHint,
+  .manualSetup {
+    margin-top: 0;
+  }
+
+  .credentials > div {
+    display: block;
+  }
+
+  .credentials dd {
+    margin-top: 0.35rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboardLink,
+  .primaryAction {
+    transition: none;
+  }
+}
+
+:global(html[data-theme="dark"]) .root {
+  --settings-accent: #d7a65a;
+  --settings-accent-contrast: #17130d;
+}

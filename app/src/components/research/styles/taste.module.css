@@ -1,0 +1,409 @@
+/* Taste: achromatic-ledger, seed 20261101. The existing six-destination
+   workspace keeps labelled navigation; paper covers and source text are its face.
+   Fluid canvas: viewport - 208px navigation - 2 * 28px gutters, with 20px gaps. */
+@media screen {
+  .workspaceRoot:not(.coverRoot) {
+    --ink: #202124;
+    --muted: #60646b;
+    --line: #e4e5e7;
+    --indigo: #30343a;
+    --teal: #30343a;
+    --research-header-height: 56px;
+    background: #fff;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .workspaceRoot .sidebar,
+  .workspaceRoot .sidebarOpen {
+    width: 208px;
+    padding: 22px 12px 14px;
+    background: #f6f6f5;
+    color: #30343a;
+    border-color: #e4e5e7;
+  }
+
+  .workspaceRoot .brand {
+    padding: 0 6px 20px;
+    margin-bottom: 18px;
+    border-color: #e0e1e2;
+    gap: 9px;
+  }
+
+  .workspaceRoot .brand strong {
+    color: #202124;
+    font-size: 22px;
+    letter-spacing: 0.04em;
+  }
+
+  .workspaceRoot .brandMark {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    width: 38px;
+    height: 42px;
+  }
+
+  .workspaceRoot .navigation {
+    gap: 4px;
+  }
+
+  .workspaceRoot .navItem,
+  .workspaceRoot .navActive {
+    min-height: 40px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px !important;
+    letter-spacing: 0;
+    color: #50545a !important;
+  }
+
+  .workspaceRoot .navItem:hover,
+  .workspaceRoot .navActive,
+  .workspaceRoot .navActive:hover {
+    background: #e8e9e8;
+    color: #202124 !important;
+  }
+
+  .workspaceRoot .navActive svg {
+    color: inherit;
+  }
+  .workspaceRoot .navItem small,
+  .workspaceRoot .navActive small {
+    color: #60646b;
+    background: transparent;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .workspaceRoot .topicHeading {
+    color: #62666c;
+    border-color: #e0e1e2;
+    padding-top: 20px;
+    margin-top: 24px;
+    letter-spacing: 0;
+    font-size: 12px;
+  }
+
+  .workspaceRoot .topicList > button {
+    min-height: 36px;
+    color: #50545a;
+    font-size: 13px;
+    border-radius: 6px;
+  }
+
+  .workspaceRoot .topicList > button:hover,
+  .workspaceRoot .topicList .topicActive {
+    background: #e8e9e8 !important;
+    color: #202124 !important;
+  }
+
+  .workspaceRoot .topicList small {
+    color: #60646b;
+  }
+  .workspaceRoot .sidebar .iconButton,
+  .workspaceRoot .sidebarOpen .iconButton {
+    color: #50545a !important;
+  }
+  .workspaceRoot .sidebarSpacer + button {
+    border-color: #e0e1e2;
+  }
+  .workspaceRoot .sidebar button:focus-visible,
+  .workspaceRoot .sidebarOpen button:focus-visible {
+    outline-color: #4d5968;
+  }
+
+  .workspaceRoot .topbar {
+    height: var(--research-header-height);
+    padding-inline: 28px;
+    border-color: #e4e5e7;
+    gap: 16px;
+  }
+  .workspaceRoot .topbarTitle {
+    font-size: 14px;
+    letter-spacing: 0;
+  }
+  .workspaceRoot .globalSearch {
+    height: 34px;
+    background: #f7f7f7;
+    border-color: #e2e3e5;
+    border-radius: 6px;
+  }
+  .workspaceRoot .globalSearch input,
+  .workspaceRoot .globalSearch kbd {
+    color: #60646b;
+  }
+  .workspaceRoot .profileButton {
+    color: #50545a !important;
+  }
+  .workspaceRoot .researchBadge {
+    color: #60646b;
+  }
+  .workspaceRoot .mainContent {
+    padding: 28px;
+  }
+
+  .workspaceRoot .welcomeHeading,
+  .workspaceRoot .pageHeading {
+    min-height: 40px;
+    border: 0;
+    padding-block: 0;
+    margin-bottom: 24px;
+    gap: 16px;
+  }
+  .workspaceRoot .welcomeHeading h1,
+  .workspaceRoot .pageHeading h1 {
+    font-size: 28px;
+    line-height: 1.35;
+    font-weight: 600;
+    letter-spacing: 0;
+  }
+  .workspaceRoot .welcomeHeading h1 span,
+  .workspaceRoot .pageHeading h1 span {
+    color: #60646b;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+  .workspaceRoot .textButton {
+    color: #50545a !important;
+  }
+  .workspaceRoot .primaryButton,
+  .workspaceRoot .secondaryButton {
+    min-height: 36px;
+    padding: 7px 14px;
+    border-radius: 6px;
+    letter-spacing: 0;
+  }
+  .workspaceRoot .primaryButton,
+  .workspaceRoot .primaryButton:hover {
+    background: #25272b;
+    border-color: #25272b;
+  }
+  .workspaceRoot .filterToolbar {
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+  .workspaceRoot .filterTabs {
+    gap: 4px;
+  }
+  .workspaceRoot .filterTabs > button {
+    min-height: 36px;
+    padding: 7px 12px;
+    border-radius: 6px;
+    color: #60646b;
+  }
+  .workspaceRoot .filterTabs > .filterActive {
+    background: #eeeeed;
+    color: #202124;
+  }
+  .workspaceRoot .filterActive > span {
+    color: #50545a;
+  }
+  .workspaceRoot .fieldWithIcon,
+  .workspaceRoot .libraryFilters select,
+  .workspaceRoot .layoutSwitch {
+    border-radius: 6px;
+  }
+  .workspaceRoot .fieldWithIcon,
+  .workspaceRoot .libraryFilters select {
+    min-height: 36px;
+  }
+
+  .workspaceRoot .paperGrid {
+    grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+    gap: 20px;
+    align-items: stretch;
+  }
+  .workspaceRoot .paperCard {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #e1e3e6;
+    border-radius: 8px;
+    background: #fff;
+  }
+  .workspaceRoot .paperCard:hover {
+    border-color: #aeb4bc;
+    transform: none;
+  }
+  .workspaceRoot .paperGrid .paperMain {
+    flex: 1;
+  }
+  .workspaceRoot .paperContent h3 {
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.55;
+    min-height: 3.1em;
+    letter-spacing: 0;
+  }
+  .workspaceRoot .paperAuthors {
+    color: #60646b;
+    font-size: 12px;
+  }
+  .workspaceRoot .paperCard > footer {
+    margin: 0 16px;
+    padding: 12px 0;
+    color: #60646b;
+    border-color: #eeeeef;
+    font-variant-numeric: tabular-nums;
+  }
+  .workspaceRoot .paperCard > footer button:first-child {
+    color: #50545a !important;
+  }
+  .workspaceRoot .paperTopic,
+  .workspaceRoot .paperTags > span {
+    background: #f3f3f3;
+    color: #60646b;
+  }
+  .workspaceRoot .unreadTag {
+    color: #60646b;
+  }
+  .workspaceRoot .paperList .paperContent h3 {
+    min-height: 0;
+    font-size: 17px;
+  }
+  .workspaceRoot .notesList {
+    background: #f8f8f7;
+  }
+  .workspaceRoot .noteItem h3,
+  .workspaceRoot .noteItemActive h3 {
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  .workspaceRoot .noteTitleInput {
+    font-size: 26px !important;
+  }
+  .workspaceRoot .noteBodyInput,
+  .workspaceRoot .notePreview {
+    font-size: 16px !important;
+    line-height: 1.85;
+  }
+  .workspaceRoot .editorInner {
+    padding: 24px 32px;
+  }
+  .workspaceRoot .mutedSmall {
+    color: #60646b;
+  }
+  .workspaceRoot input::placeholder,
+  .workspaceRoot textarea::placeholder {
+    color: #676b72;
+    opacity: 1;
+  }
+
+  .workspaceRoot[data-reading="true"] {
+    --research-header-height: 48px;
+  }
+  .workspaceRoot[data-reading="true"] .topbar {
+    padding-inline: 12px;
+    gap: 10px;
+  }
+  .workspaceRoot[data-reading="true"] .readerTabs > .readerTabActive {
+    color: #202124;
+    border-bottom-color: #202124;
+  }
+}
+
+@media screen and (max-width: 1100px) {
+  .workspaceRoot .mainContent {
+    padding: 24px;
+  }
+  .workspaceRoot .topbar {
+    padding-inline: 20px;
+  }
+}
+
+@media screen and (max-width: 750px) {
+  .workspaceRoot:not(.coverRoot) {
+    --research-header-height: 56px;
+  }
+  .workspaceRoot .mainContent {
+    padding: 20px 16px;
+  }
+  .workspaceRoot .topbar {
+    padding-inline: 12px;
+    gap: 8px;
+  }
+  .workspaceRoot .sidebarOpen {
+    width: 260px;
+    padding-top: 20px;
+  }
+  .workspaceRoot .sidebarOpen .navItem,
+  .workspaceRoot .sidebarOpen .navActive,
+  .workspaceRoot .topicList > button {
+    min-height: 44px;
+  }
+  .workspaceRoot .welcomeHeading h1,
+  .workspaceRoot .pageHeading h1 {
+    font-size: 24px;
+  }
+  .workspaceRoot .libraryPage .welcomeHeading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 12px 10px;
+    margin-bottom: 20px;
+    align-items: center;
+  }
+  .workspaceRoot .libraryPage .welcomeHeading h1 {
+    grid-column: 1 / 3;
+    grid-row: 1;
+  }
+  .workspaceRoot .libraryPage .welcomeHeading .actionRow {
+    display: contents;
+  }
+  .workspaceRoot .libraryPage .welcomeHeading .primaryButton {
+    grid-column: 3;
+    grid-row: 1;
+    padding-inline: 12px;
+  }
+  .workspaceRoot .libraryPage .welcomeHeading .textButton {
+    grid-row: 2;
+    justify-self: start;
+  }
+  .workspaceRoot .libraryPage .welcomeHeading .layoutSwitch {
+    grid-column: 3;
+    grid-row: 2;
+  }
+  .workspaceRoot .primaryButton,
+  .workspaceRoot .secondaryButton,
+  .workspaceRoot .filterTabs > button,
+  .workspaceRoot .libraryFilters select,
+  .workspaceRoot .fieldWithIcon,
+  .workspaceRoot .textButton {
+    min-height: 44px;
+  }
+  .workspaceRoot .filterToolbar {
+    gap: 12px;
+  }
+  .workspaceRoot .filterTabs {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .workspaceRoot .filterTabs > button {
+    padding-inline: 9px;
+  }
+  .workspaceRoot .paperContent h3 {
+    font-size: 18px;
+  }
+  .workspaceRoot .paperCard > footer {
+    min-height: 48px;
+  }
+  .workspaceRoot .editorInner {
+    padding: 20px 16px;
+  }
+  .workspaceRoot .noteTitleInput {
+    font-size: 23px !important;
+  }
+  .workspaceRoot[data-reading="true"] {
+    --research-header-height: 48px;
+  }
+  .workspaceRoot[data-reading="true"] .topbar {
+    padding-inline: 8px;
+    gap: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspaceRoot .paperCard {
+    transition: none;
+  }
+}

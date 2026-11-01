@@ -1,0 +1,320 @@
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.heading h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.heading h3 span {
+  color: #89909a;
+  font-size: 12px;
+  font-weight: 400;
+}
+.filters {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 14px;
+  min-width: 0;
+}
+.filters input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid #dfe4e8;
+  border-radius: 4px;
+  background: #fafbfc;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+}
+.filters button {
+  padding: 6px 9px;
+  border: 1px solid #dfe4e8;
+  border-radius: 4px;
+  background: #fff;
+  color: #6a747d;
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.filters button[aria-pressed="true"] {
+  border-color: #b4cbb9;
+  background: #eff5f0;
+  color: #365e43;
+}
+.filters input:focus-visible,
+.filters button:focus-visible,
+.longExcerpt summary:focus-visible {
+  outline: 2px solid #2b679f;
+  outline-offset: 2px;
+}
+.filters button:disabled,
+.filters input:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.colorDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f6c84c;
+}
+.colorDot[data-highlight-color="#91c9a3"] {
+  background: #91c9a3;
+}
+.colorDot[data-highlight-color="#8cbce8"] {
+  background: #8cbce8;
+}
+.colorDot[data-highlight-color="#e9a9bc"] {
+  background: #e9a9bc;
+}
+.longExcerpt summary {
+  cursor: pointer;
+  list-style: none;
+  color: #667079;
+}
+.longExcerpt summary::-webkit-details-marker {
+  display: none;
+}
+.longExcerpt summary span {
+  display: block;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.longExcerpt summary small {
+  display: block;
+  margin-top: 4px;
+  color: #4e6b8d;
+  font-size: 11px;
+}
+.longExcerpt[open] summary span {
+  display: none;
+}
+.longExcerpt[open] blockquote {
+  margin-top: 8px;
+}
+
+.toolbar,
+.selectionActions,
+.cardActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.textButton,
+.pageLink,
+.cardActions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #59616b;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.textButton:hover,
+.cardActions button:hover {
+  color: #202a36;
+}
+
+.selectionBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 14px;
+  border: 1px solid #e1e5ea;
+  border-radius: 5px;
+  background: #f6f7f9;
+}
+
+.selectionBar label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #515b66;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.selectionBar label span {
+  color: #89909a;
+  font-size: 12px;
+}
+
+.selectionBar input,
+.selectAnnotation {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: #303b49;
+  cursor: pointer;
+}
+
+.selectionActions {
+  gap: 8px;
+}
+
+.selectionActions button {
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid #d4d9e0;
+  border-radius: 4px;
+  background: #fff;
+  color: #515b66;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.selectionActions .primaryButton {
+  border-color: #303b49;
+  background: #303b49;
+  color: #fff;
+}
+
+.annotationList {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.annotationCard {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #e3e6eb;
+  border-radius: 5px;
+  background: #fff;
+  color: #303844;
+  font-size: 14px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.cardHeader,
+.cardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cardHeader {
+  margin-bottom: 12px;
+}
+
+.annotationKind {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #7b8490;
+  font-size: 12px;
+}
+
+.annotationKind .selectAnnotation {
+  margin-right: 3px;
+}
+
+.pageLink {
+  min-height: 22px;
+  color: #4e6b8d;
+  font-size: 12px;
+}
+
+.pageLink:hover {
+  color: #1d4e84;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.excerpt > span,
+.thought > span {
+  display: block;
+  margin-bottom: 5px;
+  color: #8b929b;
+  font-size: 11px;
+}
+
+.excerpt blockquote {
+  margin: 0;
+  padding: 0 0 0 10px;
+  border-left: 2px solid #d7c594;
+  color: #4b535f;
+  font: inherit;
+  white-space: pre-wrap;
+}
+
+.thought {
+  margin-top: 14px;
+}
+
+.thought:first-child {
+  margin-top: 0;
+}
+
+.thought p {
+  margin: 0;
+  font: inherit;
+  white-space: pre-wrap;
+}
+
+.cardFooter {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #f0f1f4;
+}
+
+.savedState {
+  color: #9ba1aa;
+  font-size: 11px;
+}
+
+.cardActions button {
+  min-height: 24px;
+  font-size: 12px;
+}
+
+.cardActions button:last-child:hover {
+  color: #a33f3f;
+}
+
+.textButton:disabled,
+.pageLink:disabled,
+.cardActions button:disabled,
+.selectionActions button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.textButton:focus-visible,
+.pageLink:focus-visible,
+.cardActions button:focus-visible,
+.selectionActions button:focus-visible,
+.selectionBar input:focus-visible,
+.selectAnnotation:focus-visible {
+  outline: 2px solid #2b679f;
+  outline-offset: 3px;
+}

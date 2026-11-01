@@ -1,0 +1,70 @@
+/**
+ * Provider-agnostic agent interface. Every provider accepts the same turn
+ * shape: API-key (anthropic, openai), local CLI (claude-code, codex), or the
+ * same CLIs over SSH. `images` are LOCAL file paths; each provider's
+ * attachment routing decides how they travel (base64 for APIs and
+ * claude-code stdin, path references for local codex, scp for SSH codex;
+ * see attachments.ts).
+ */
+
+import {
+  LOCAL_PROVIDER_IDS,
+  type ProviderId,
+} from "thesidedoor-core/ai/catalog";
+import type { ProfileCapability } from "../auth/profile-capability";
+export { PROVIDER_IDS, type ProviderId } from "thesidedoor-core/ai/catalog";
+
+export type LocalProviderId = (typeof LOCAL_PROVIDER_IDS)[number];
+
+export function isLocalProvider(
+  provider: ProviderId,
+): provider is LocalProviderId {
+  return (LOCAL_PROVIDER_IDS as readonly ProviderId[]).includes(provider);
+}
+
+export interface AgentTurn {
+  /** Trusted admission identity. Never populated from user-supplied request fields. */
+  metricOwner?: ProfileCapability | "instance";
+  system: string;
+  prompt: string;
+  /** Absolute local paths to images (crops, pasted screenshots). */
+  images?: string[];
+  /** Ask compatible APIs to constrain the response to a JSON object. */
+  responseFormat?: "json_object";
+  /**
+   * Let this turn use the provider's web search (enabled by default in Settings).
+   * Providers whose capabilities.web is false ignore it.
+   */
+  allowWeb?: boolean;
+  timeoutMs?: number;
+  signal?: AbortSignal;
+  /** Native token ceiling for API-backed providers. */
+  maxOutputTokens?: number;
+  /** Streaming character guard for CLI-backed providers. */
+  maxOutputChars?: number;
+}
+
+/** What a provider can do beyond text-in/text-out. */
+interface AgentCapabilities {
+  /** Can run web searches inside a turn when allowWeb is set. */
+  web: boolean;
+  /** Accepts image attachments. */
+  vision: boolean;
+  /**
+   * Manages context internally (agentic CLIs): send full paper text and let
+   * the provider compact/window it. False caps injected text at a size safe
+   * for small local models.
+   */
+  unboundedContext: boolean;
+}
+
+export interface AgentProvider {
+  id: ProviderId;
+  capabilities: AgentCapabilities;
+  /** Run one turn and return the full text response. */
+  execute(turn: AgentTurn): Promise<string>;
+  /** Run one turn, yielding text chunks as they arrive. */
+  stream(turn: AgentTurn): AsyncGenerator<string>;
+}
+
+export const DEFAULT_TIMEOUT_MS = 600_000;

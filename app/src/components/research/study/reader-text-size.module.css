@@ -1,0 +1,73 @@
+.control {
+  position: relative;
+  align-self: center;
+  flex: 0 0 28px;
+  margin-left: 3px;
+  z-index: 35;
+}
+.control > summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  width: 28px;
+  border-radius: 3px;
+  color: #606a78;
+  font-size: 14px;
+  cursor: pointer;
+  list-style: none;
+}
+.control > summary::-webkit-details-marker {
+  display: none;
+}
+.control > summary:hover,
+.control[open] > summary {
+  background: #f0f2f5;
+  color: #202731;
+}
+.control > summary:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 1px;
+}
+.popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 5px);
+  width: 142px;
+  border: 1px solid #dce0e6;
+  padding: 7px;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 6px 20px #14171c1a;
+}
+.popover > p {
+  font-size: 11px;
+  color: #7b828c;
+  margin: 2px 5px 5px;
+}
+.control .popover button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px;
+  border: 0;
+  border-radius: 3px;
+  color: #394350;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+}
+.popover button > span:first-child {
+  flex: 1;
+  text-align: left;
+}
+.popover button > small {
+  font-size: 11px;
+  color: #7b828c;
+}
+.popover button:hover,
+.popover button[aria-pressed="true"] {
+  background: #f2f5f8;
+  color: #0066cc;
+}

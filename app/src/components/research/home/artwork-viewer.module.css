@@ -1,0 +1,238 @@
+.dialog {
+  position: fixed;
+  inset: 0;
+  width: min(1440px, calc(100vw - 64px));
+  height: min(920px, calc(100dvh - 64px));
+  max-width: none;
+  max-height: none;
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #e4e5e7;
+  border-radius: 10px;
+  background: #fff;
+  color: #202124;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "PingFang SC",
+    "Microsoft YaHei",
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color-scheme: light;
+}
+
+.dialog::backdrop {
+  background: rgb(0 0 0 / 55%);
+}
+
+.dialog,
+.dialog * {
+  box-sizing: border-box;
+}
+
+.viewer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e4e5e7;
+  background: #fff;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.toolbar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+}
+
+.dialog .control {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #30343a;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.dialog .control:hover:not(:disabled) {
+  background: #ededed;
+}
+
+.dialog .control:active:not(:disabled) {
+  background: #e4e5e7;
+}
+
+.dialog .control:disabled {
+  color: #74777c;
+  cursor: default;
+}
+
+.dialog .control:focus-visible,
+.viewport:focus-visible {
+  outline: 2px solid #30343a;
+  outline-offset: -3px;
+}
+
+.zoomValue {
+  width: 52px;
+  color: #30343a;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.separator {
+  flex: none;
+  width: 1px;
+  height: 20px;
+  margin-inline: 6px;
+  background: #e4e5e7;
+}
+
+.dialog .reset {
+  padding-inline: 10px;
+  font-size: 13px;
+}
+
+.viewport {
+  --viewer-zoom: 1;
+  --viewer-inset: 48px;
+  position: relative;
+  container-type: size;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  background: #f6f6f5;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.viewport[data-zoom="1.5"] {
+  --viewer-zoom: 1.5;
+}
+
+.viewport[data-zoom="2"] {
+  --viewer-zoom: 2;
+}
+
+.viewport[data-zoom="3"] {
+  --viewer-zoom: 3;
+}
+
+.viewport:not([data-zoom="1"]) {
+  cursor: grab;
+}
+
+.viewport[data-dragging="true"] {
+  cursor: grabbing;
+}
+
+.stage {
+  display: grid;
+  place-items: center;
+  width: max-content;
+  height: max-content;
+  min-width: 100%;
+  min-height: 100%;
+  padding: calc(var(--viewer-inset) / 2);
+}
+
+/* The initial canvas fits both viewport axes; every zoom keeps the 3820:2964 ratio. */
+.canvas {
+  width: min(
+    calc((100cqw - var(--viewer-inset)) * var(--viewer-zoom)),
+    calc((100cqh - var(--viewer-inset)) * 3820 / 2964 * var(--viewer-zoom))
+  );
+  height: min(
+    calc((100cqh - var(--viewer-inset)) * var(--viewer-zoom)),
+    calc((100cqw - var(--viewer-inset)) * 2964 / 3820 * var(--viewer-zoom))
+  );
+}
+
+.artwork {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: contain;
+}
+
+.error {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  margin: 0;
+  padding: 24px;
+  background: #f6f6f5;
+  color: #60646b;
+  font-size: 14px;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .dialog {
+    width: calc(100vw - 16px);
+    height: calc(100dvh - 32px);
+    border-radius: 8px;
+  }
+
+  .toolbar {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .separator {
+    margin-inline: 0;
+  }
+
+  .viewport {
+    --viewer-inset: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog .control {
+    transition: none;
+  }
+}

@@ -1,0 +1,185 @@
+.overview {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e5e8ec;
+  color: #272c33;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.heading {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 12px;
+  color: #727b88;
+}
+.heading strong {
+  font-weight: 400;
+  color: #4d5867;
+}
+.shortQuestion,
+.question {
+  margin: 4px 0 6px;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.question > summary,
+.excerpt > summary,
+.sourceDetails > summary,
+.process > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  cursor: pointer;
+}
+.question > summary::-webkit-details-marker,
+.excerpt > summary::-webkit-details-marker,
+.sourceDetails > summary::-webkit-details-marker,
+.process > summary::-webkit-details-marker {
+  display: none;
+}
+.question > summary > span {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.question > p {
+  margin: 8px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.shortQuestion {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sourceRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.sourceDetails {
+  flex: 1;
+  min-width: 140px;
+  font-size: 12px;
+  color: #5b6878;
+}
+.sourceDetails > summary,
+.excerpt > summary {
+  min-height: 28px;
+  padding-block: 3px;
+}
+.sourceDetails ul {
+  max-height: 160px;
+  overflow-y: auto;
+  margin: 4px 0 8px;
+  padding: 0;
+  list-style: none;
+}
+.sourceDetails li {
+  padding: 4px 0;
+  overflow-wrap: anywhere;
+}
+.sourceDetails li > button {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: #365b85;
+  text-align: left;
+  font-size: 12px;
+  line-height: 1.65;
+}
+.overview .useSources,
+.overview .openSource {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 3px 0;
+  border: 0;
+  background: transparent;
+  color: #365b85;
+  font-size: 12px;
+  line-height: 1.65;
+}
+.overview .useSources:disabled {
+  color: #858c96;
+}
+.excerpt {
+  font-size: 12px;
+  color: #5b6878;
+}
+.excerpt blockquote {
+  max-height: 180px;
+  overflow-y: auto;
+  margin: 4px 0 6px;
+  padding-left: 10px;
+  border-left: 2px solid #d9dfe7;
+  color: #444e5c;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.75;
+}
+.overview .notice {
+  margin: 5px 0 0;
+  color: #8a6743;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.excerpt blockquote:focus-visible,
+.sourceDetails ul:focus-visible {
+  outline: 2px solid #7a91ad;
+  outline-offset: 3px;
+}
+.overview svg,
+.process svg {
+  margin-top: 2px;
+  flex-shrink: 0;
+  color: #89919d;
+}
+.question[open] > summary svg,
+.excerpt[open] > summary svg,
+.sourceDetails[open] > summary svg,
+.process[open] > summary svg {
+  transform: rotate(180deg);
+}
+.process {
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eceef1;
+  color: #727c89;
+  font-size: 12px;
+}
+.process > summary {
+  padding: 3px 0;
+}
+.process > summary small {
+  margin-left: auto;
+  font-size: 12px;
+}
+.process ol {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.process li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+}
+.process li small {
+  flex-shrink: 0;
+  font-size: 12px;
+}

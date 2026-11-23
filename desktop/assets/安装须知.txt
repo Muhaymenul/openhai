@@ -1,13 +1,15 @@
-教研阅记桌面版 0.1.1 — 安装须知
+教研阅记桌面版 0.1.2 · 安装须知
 
-此安装包提供 Windows x64 桌面程序及 Electron 运行环境。
+此安装包由项目源码构建，提供 Windows x64 桌面程序及 Electron 运行环境。
 
-使用前需在本机部署完整教研阅记 demo，并准备 Docker Desktop、PostgreSQL 和该用户自己的模型接口。安装后首次打开，请选择包含 docker-compose.yml、scripts 和 app 的项目文件夹。
+使用前需部署完整教研阅记项目，准备 Docker Desktop 和自己的 PostgreSQL。AI 功能按需接入自己的模型服务。首次打开请选择包含 docker-compose.yml、scripts 和 app 的完整项目文件夹。
 
-本包不包含其他用户的论文、笔记、数据库内容、模型令牌或私有配置。不会自动安装或替换 PostgreSQL 和 Docker，也不会修改既有数据库。
+安装包不携带其他用户的论文、笔记、数据库、模型令牌或私有配置。数据库与模型配置在自己的完整项目 private 目录中保管。
 
-可选择安装位置。桌面浏览器资料、缓存和连接设置保存在安装文件夹旁的 JiaoyanDesktopData 文件夹，升级或卸载时保留。原业务资料仍由所选 demo 项目和 PostgreSQL 保存。关闭程序后后台服务继续运行；需要停止时使用原项目的“停止Demo.cmd”。
+可选择安装位置。桌面连接设置、草稿、缓存和日志保存在安装目录旁的 JiaoyanDesktopData，升级和卸载时保留。业务资料由完整项目与 PostgreSQL 保存。
 
-桌面接入代码按 MIT 许可证提供。Electron 与 Chromium 的第三方许可证随安装目录中的 LICENSE.electron.txt 与 LICENSES.chromium.html 提供。原业务项目的许可与来源见完整项目 UPSTREAM.md。
+关闭窗口时先确认未保存内容，然后自动停止本项目 Web 与 PaperFlow 容器；请等待退出窗口消失。系统安装的 PostgreSQL 服务继续运行，完整便携部署会停止自带数据库。Docker Desktop 和其他项目保持运行。
 
-这是本地试用安装包，未配置代码签名证书。请仅从项目可信发布者处获取；本次不会向任何平台上传安装包或用户数据。
+桌面接入代码按 MIT 许可证提供。Electron 与 Chromium 的第三方许可证随安装目录提供。业务项目及字体、画作来源见完整项目 UPSTREAM.md 和 THIRD_PARTY_NOTICES.md。
+
+本地构建未配置代码签名证书。请从可信来源获取安装程序。

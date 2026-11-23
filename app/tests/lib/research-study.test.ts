@@ -46,7 +46,11 @@ describe("research learning-note preview", () => {
 
   it("requires source grounding and uses labels only for a known framework prefix", () => {
     expect(studyPrompt("cornell")).toContain("[p.页码]");
-    expect(studyPrompt("feynman")).toContain("不可作为论文证据");
+    expect(studyPrompt("feynman")).toContain(
+      "再回到论文中的实际术语与原文依据",
+    );
+    expect(studyPrompt("feynman")).toContain("与当前论证无关");
+    expect(studyFrameworks.feynman.example).not.toContain("非论文证据");
     expect(studyPrompt("recall")).toContain("不要在问题标题内泄露答案");
     expect(studyLabel(studyPrompt("recall"))).toBe("自测问答");
     expect(studyLabel("自由提问 [学习笔记:recall]")).toBeNull();

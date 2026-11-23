@@ -12,6 +12,7 @@ import { EmptyState, SourceChips } from "../ResearchUi";
 import { StudyMarkdown } from "../study/StudyMarkdown";
 import styles from "../styles";
 import local from "./learning.module.css";
+import { mathAwarePreview } from "@/lib/chat/normalize-math";
 
 export function ReaderNotes({
   notes,
@@ -59,7 +60,7 @@ export function ReaderNotes({
           </div>
           <h3>{note.title}</h3>
           <div className={styles.readerNotePreview}>
-            <StudyMarkdown content={note.body.slice(0, 550)} />
+            <StudyMarkdown content={mathAwarePreview(note.body)} />
           </div>
           <SourceChips sources={note.sources} onOpen={onOpenSource} />
           <div className={local.noteTools}>

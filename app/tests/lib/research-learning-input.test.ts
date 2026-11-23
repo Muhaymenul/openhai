@@ -11,6 +11,7 @@ import {
   researchSourcePaperIds,
 } from "@/lib/research/context-scope";
 import { prepareLearningInput } from "@/lib/research/learning-input";
+import { RESEARCH_REPLY_STYLE } from "@/lib/research/reply-style";
 import { prepareQuestionInput } from "@/lib/research/discussion/input";
 import { learningSchema } from "@/lib/research/learning-schema";
 import type { LearningRequest } from "@/lib/research/learning-types";
@@ -72,11 +73,11 @@ async function fixture(title = "Learning paper"): Promise<ResearchPaper> {
     contentRevision: digest(pages),
   });
 }
-function input(
+async function input(
   paper: ResearchPaper,
   learning: LearningRequest,
   selection?: ResearchSelection,
-): StartResearchRunInput {
+): Promise<StartResearchRunInput> {
   return {
     paperId: paper.id,
     answerStyle: "grounded",
@@ -84,12 +85,14 @@ function input(
     question: "An old UI question that should be replaced",
     learning,
     selection,
-    context: researchContext(paper.id),
+    context: await researchContext(paper.id),
   };
 }
-function errorStatus(operation: () => unknown): number | undefined {
+async function errorStatus(
+  operation: () => unknown,
+): Promise<number | undefined> {
   try {
-    operation();
+    await operation();
   } catch (error) {
     return error && typeof error === "object" && "status" in error
       ? Number(error.status)
@@ -98,6 +101,40 @@ function errorStatus(operation: () => unknown): number | undefined {
 }
 
 describe("explicit learning material boundaries", () => {
+  it("uses the direct reply style for explanations, notes, quizzes and feedback without forcing a limitations paragraph", async () => {
+    const paper = await fixture();
+    const selection = {
+      page: 1,
+      text: "Selected evidence.",
+      contentRevision: paper.contentRevision,
+    };
+    for (const learning of [
+      { task: "explain", source: { kind: "selection" } },
+      { task: "explain", detail: "example", source: { kind: "selection" } },
+      { task: "explain", detail: "deep", source: { kind: "selection" } },
+      { task: "notes", source: { kind: "paper" } },
+      { task: "quiz", count: 3, source: { kind: "paper" } },
+      {
+        task: "understanding",
+        reflection: "The passage describes observable evidence.",
+        source: { kind: "selection" },
+      },
+    ] satisfies LearningRequest[]) {
+      const prepared = await prepareLearningInput(
+        await input(paper, learning, selection),
+      );
+      expect(prepared.question).toContain(RESEARCH_REPLY_STYLE);
+      expect(prepared.question).not.toContain("一个需要注意的前提");
+      expect(prepared.question).not.toContain("并指出类比的边界");
+      expect(prepared.question).not.toContain("局限、我的思考五个");
+      expect(prepared.question).toContain("真实[p.页码]");
+      expect(prepared.sourcePaperIds).toEqual([paper.id]);
+      if (learning.task === "notes")
+        expect(prepared.question).toMatch(/^\[学习笔记:cornell\]/);
+      if (learning.task === "quiz")
+        expect(prepared.question).toMatch(/^\[学习笔记:recall\]/);
+    }
+  });
   it("lets a free explanation use relevant concepts and real surrounding passages without a fixed template", async () => {
     const paper = await fixture();
     const concept = await saveKnowledge({
@@ -105,7 +142,7 @@ describe("explicit learning material boundaries", () => {
       aliases: ["Selected evidence"],
       body: "区分可观察证据与解释推断。",
     });
-    const raw = input(
+    const raw = await input(
       paper,
       { task: "explain", source: { kind: "selection" } },
       {
@@ -116,7 +153,9 @@ describe("explicit learning material boundaries", () => {
     );
     raw.answerStyle = "discussion";
     raw.referenceConceptIds = [concept.id];
-    const prepared = prepareLearningInput(prepareQuestionInput(raw));
+    const prepared = await prepareLearningInput(
+      await prepareQuestionInput(raw),
+    );
     const packet = buildResearchContext(prepared);
     expect(prepared.answerStyle).toBe("discussion");
     expect(prepared.question).not.toContain("120至220字");
@@ -137,37 +176,40 @@ describe("explicit learning material boundaries", () => {
       mode: "ask",
       question: "What does this imply?",
       selection: { page: 1, text: "Selected evidence." },
-      context: researchContext(paper.id),
+      context: await researchContext(paper.id),
     };
-    expect(prepareQuestionInput(raw).selection?.contentRevision).toBe(
+    expect((await prepareQuestionInput(raw)).selection?.contentRevision).toBe(
       paper.contentRevision,
     );
     expect(
-      errorStatus(() =>
-        prepareQuestionInput({
-          ...raw,
-          referenceConceptIds: ["missing-concept"],
-        }),
+      await errorStatus(
+        async () =>
+          await prepareQuestionInput({
+            ...raw,
+            referenceConceptIds: ["missing-concept"],
+          }),
       ),
     ).toBe(404);
     expect(
-      errorStatus(() =>
-        prepareQuestionInput({
-          ...raw,
-          selection: { page: 2, text: "Selected evidence." },
-        }),
+      await errorStatus(
+        async () =>
+          await prepareQuestionInput({
+            ...raw,
+            selection: { page: 2, text: "Selected evidence." },
+          }),
       ),
     ).toBe(400);
     expect(
-      errorStatus(() =>
-        prepareQuestionInput({
-          ...raw,
-          selection: {
-            page: 1,
-            text: "Selected evidence.",
-            contentRevision: "old",
-          },
-        }),
+      await errorStatus(
+        async () =>
+          await prepareQuestionInput({
+            ...raw,
+            selection: {
+              page: 1,
+              text: "Selected evidence.",
+              contentRevision: "old",
+            },
+          }),
       ),
     ).toBe(409);
   });
@@ -179,8 +221,8 @@ describe("explicit learning material boundaries", () => {
       body: "UNSELECTED-NOTE-CONTENT",
       confirmed: true,
     });
-    const prepared = prepareLearningInput(
-      input(
+    const prepared = await prepareLearningInput(
+      await input(
         paper,
         { task: "explain", source: { kind: "selection" }, detail: "brief" },
         {
@@ -225,7 +267,7 @@ describe("explicit learning material boundaries", () => {
       title: "Wrong note",
       body: "WRONG-PAPER-NOTE",
     });
-    const raw = input(
+    const raw = await input(
       paper,
       {
         task: "quiz",
@@ -238,7 +280,7 @@ describe("explicit learning material boundaries", () => {
       },
       { page: 1, text: "Selected evidence." },
     );
-    const prepared = prepareLearningInput(raw);
+    const prepared = await prepareLearningInput(raw);
     const packet = buildResearchContext(prepared);
     expect(prepared.selection).toBeUndefined();
     expect(prepared.context.studyMaterials?.map((value) => value.body)).toEqual(
@@ -252,19 +294,22 @@ describe("explicit learning material boundaries", () => {
       body: "Changed since selection",
       version: selected.version,
     });
-    expect(errorStatus(() => prepareLearningInput(raw))).toBe(409);
+    expect(await errorStatus(async () => await prepareLearningInput(raw))).toBe(
+      409,
+    );
     expect(
-      errorStatus(() =>
-        prepareLearningInput(
-          input(paper, {
-            task: "quiz",
-            source: {
-              kind: "note",
-              noteId: foreign.id,
-              version: foreign.version,
-            },
-          }),
-        ),
+      await errorStatus(
+        async () =>
+          await prepareLearningInput(
+            await input(paper, {
+              task: "quiz",
+              source: {
+                kind: "note",
+                noteId: foreign.id,
+                version: foreign.version,
+              },
+            }),
+          ),
       ),
     ).toBe(404);
   });
@@ -291,11 +336,11 @@ describe("explicit learning material boundaries", () => {
         comment: "UNSELECTED-COMMENT",
         color: "#f6c84c",
         rects: [],
-        pdfEtag: paperById(paper.id).pdfEtag,
+        pdfEtag: (await paperById(paper.id)).pdfEtag,
       })
     ).annotation;
-    const current = paperById(paper.id);
-    const raw = input(current, {
+    const current = await paperById(paper.id);
+    const raw = await input(current, {
       task: "notes",
       source: {
         kind: "annotations",
@@ -303,7 +348,7 @@ describe("explicit learning material boundaries", () => {
         versions: { [first.id]: first.version },
       },
     });
-    const prepared = prepareLearningInput(raw);
+    const prepared = await prepareLearningInput(raw);
     const packet = JSON.stringify(buildResearchContext(prepared));
     expect(packet).toContain("SELECTED-COMMENT");
     expect(packet).not.toContain("UNSELECTED-COMMENT");
@@ -312,36 +357,42 @@ describe("explicit learning material boundaries", () => {
       first.id,
     );
     expect(
-      errorStatus(() =>
-        prepareLearningInput(
-          input(current, {
-            task: "notes",
-            source: {
-              kind: "annotations",
-              ids: [first.id],
-              versions: { [first.id]: first.version + 1 },
-            },
-          }),
-        ),
+      await errorStatus(
+        async () =>
+          await prepareLearningInput(
+            await input(current, {
+              task: "notes",
+              source: {
+                kind: "annotations",
+                ids: [first.id],
+                versions: { [first.id]: first.version + 1 },
+              },
+            }),
+          ),
       ),
     ).toBe(409);
     expect(
-      errorStatus(() =>
-        prepareLearningInput(
-          input(current, {
-            task: "notes",
-            source: { kind: "annotations", ids: ["missing-annotation"] },
-          }),
-        ),
+      await errorStatus(
+        async () =>
+          await prepareLearningInput(
+            await input(current, {
+              task: "notes",
+              source: { kind: "annotations", ids: ["missing-annotation"] },
+            }),
+          ),
       ),
     ).toBe(404);
     const removed = await trashResearchPaper(
       current.id,
-      paperById(current.id).version,
+      (await paperById(current.id)).version,
     );
-    expect(errorStatus(() => prepareLearningInput(raw))).toBe(410);
+    expect(await errorStatus(async () => await prepareLearningInput(raw))).toBe(
+      410,
+    );
     await restoreResearchPaper(current.id, removed.version);
-    expect(prepareLearningInput(raw).context.studyMaterials).toHaveLength(1);
+    expect(
+      (await prepareLearningInput(raw)).context.studyMaterials,
+    ).toHaveLength(1);
     expect(second.id).not.toBe(first.id);
   });
 
@@ -354,17 +405,19 @@ describe("explicit learning material boundaries", () => {
       body: "Cross source interpretation",
       sources: [{ paperId: other.id, page: 2, quote: "evidence and limits" }],
     });
-    const raw = input(paper, {
+    const raw = await input(paper, {
       task: "quiz",
       source: { kind: "note", noteId: note.id, version: note.version },
     });
-    const prepared = prepareLearningInput(raw);
+    const prepared = await prepareLearningInput(raw);
     expect(researchSourcePaperIds(prepared)).toEqual(
       [paper.id, other.id].sort(),
     );
     expect(buildResearchContext(prepared).related_papers).toEqual([]);
     await trashResearchPaper(other.id, other.version);
-    expect(errorStatus(() => prepareLearningInput(raw))).toBe(404);
+    expect(await errorStatus(async () => await prepareLearningInput(raw))).toBe(
+      404,
+    );
   });
 
   it("keeps explicit source identity in the scope and never reuses a provider session for learning", async () => {
@@ -374,8 +427,8 @@ describe("explicit learning material boundaries", () => {
       source: { kind: "selection" },
       detail: "brief",
     };
-    const selected = prepareLearningInput(
-      input(paper, learning, { page: 1, text: "Selected evidence." }),
+    const selected = await prepareLearningInput(
+      await input(paper, learning, { page: 1, text: "Selected evidence." }),
     );
     const scope = researchContextScope(selected);
     expect(JSON.parse(scope).learning).toEqual(learning);
@@ -393,8 +446,11 @@ describe("explicit learning material boundaries", () => {
       updatedAt: "2026-10-31T00:00:00Z",
     };
     expect(canReuseResearchSession(run, selected, scope)).toBe(false);
-    const another = prepareLearningInput(
-      input(paper, learning, { page: 1, text: "Another selected passage." }),
+    const another = await prepareLearningInput(
+      await input(paper, learning, {
+        page: 1,
+        text: "Another selected passage.",
+      }),
     );
     expect(researchContextScope(another)).not.toBe(scope);
   });
@@ -402,50 +458,58 @@ describe("explicit learning material boundaries", () => {
   it("requires a selected passage for explanations and understanding feedback, and bounds parameters", async () => {
     const paper = await fixture();
     expect(
-      errorStatus(() =>
-        prepareLearningInput(
-          input(paper, { task: "explain", source: { kind: "paper" } }),
-        ),
-      ),
-    ).toBe(400);
-    expect(
-      errorStatus(() =>
-        prepareLearningInput(
-          input(paper, { task: "explain", source: { kind: "selection" } }),
-        ),
-      ),
-    ).toBe(400);
-    expect(
-      errorStatus(() =>
-        prepareLearningInput(
-          input(
-            paper,
-            { task: "understanding", source: { kind: "selection" } },
-            { page: 1, text: "Selected evidence." },
+      await errorStatus(
+        async () =>
+          await prepareLearningInput(
+            await input(paper, { task: "explain", source: { kind: "paper" } }),
           ),
-        ),
       ),
     ).toBe(400);
     expect(
-      errorStatus(() =>
-        prepareLearningInput(
-          input(
-            paper,
-            { task: "explain", source: { kind: "selection" } },
-            { page: 1, text: "Unverifiable quote" },
+      await errorStatus(
+        async () =>
+          await prepareLearningInput(
+            await input(paper, {
+              task: "explain",
+              source: { kind: "selection" },
+            }),
           ),
-        ),
       ),
     ).toBe(400);
     expect(
-      errorStatus(() =>
-        prepareLearningInput(
-          input(
-            paper,
-            { task: "explain", source: { kind: "selection" } },
-            { page: 1, text: "Selected evidence.", contentRevision: "old" },
+      await errorStatus(
+        async () =>
+          await prepareLearningInput(
+            await input(
+              paper,
+              { task: "understanding", source: { kind: "selection" } },
+              { page: 1, text: "Selected evidence." },
+            ),
           ),
-        ),
+      ),
+    ).toBe(400);
+    expect(
+      await errorStatus(
+        async () =>
+          await prepareLearningInput(
+            await input(
+              paper,
+              { task: "explain", source: { kind: "selection" } },
+              { page: 1, text: "Unverifiable quote" },
+            ),
+          ),
+      ),
+    ).toBe(400);
+    expect(
+      await errorStatus(
+        async () =>
+          await prepareLearningInput(
+            await input(
+              paper,
+              { task: "explain", source: { kind: "selection" } },
+              { page: 1, text: "Selected evidence.", contentRevision: "old" },
+            ),
+          ),
       ),
     ).toBe(409);
     expect(
@@ -461,8 +525,8 @@ describe("explicit learning material boundaries", () => {
         source: { kind: "annotations", ids: [] },
       }).success,
     ).toBe(false);
-    const feedback = prepareLearningInput(
-      input(
+    const feedback = await prepareLearningInput(
+      await input(
         paper,
         {
           task: "understanding",

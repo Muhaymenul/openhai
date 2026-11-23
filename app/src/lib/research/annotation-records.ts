@@ -8,7 +8,7 @@ import {
   PDFString,
 } from "pdf-lib";
 import { digest, mutateWorkspace, paperById, readWorkspace } from "./store";
-import { readVersionedPdf } from "../library/pdf/file";
+import { readVersionedPdf, readVersionedPdfFile } from "../library/pdf/file";
 import type { ResearchAnnotation } from "./types";
 
 type Mark = {
@@ -115,7 +115,7 @@ export function managedMarks(document: PDFDocument): ManagedMark[] {
 }
 
 export async function synchronizeAnnotations(paperId: string): Promise<void> {
-  const paper = paperById(paperId);
+  const paper = await paperById(paperId);
   const current = await readVersionedPdf(
     paper.library.topic,
     paper.library.slug,
@@ -191,10 +191,12 @@ export async function synchronizeAnnotations(paperId: string): Promise<void> {
 }
 
 export async function recoverChangedAnnotations(): Promise<void> {
-  for (const paper of readWorkspace().papers.filter(
+  for (const paper of (await readWorkspace()).papers.filter(
     (value) => !value.trashedAt,
   )) {
-    const current = await readVersionedPdf(
+    // Unchanged documents only need a stat/version check. Read and parse bytes
+    // in synchronizeAnnotations only when an external writer changed the PDF.
+    const current = await readVersionedPdfFile(
       paper.library.topic,
       paper.library.slug,
     );

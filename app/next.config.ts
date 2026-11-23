@@ -17,7 +17,7 @@ const privateTraceExcludes = [
 
 const nextConfig: NextConfig = {
   // Native modules stay external so the server loads their .node binaries.
-  serverExternalPackages: ["better-sqlite3", "thesidedoor-flock"],
+  serverExternalPackages: ["better-sqlite3", "thesidedoor-flock", "pg"],
   // Self-contained server bundle for the Docker image.
   output: "standalone",
   outputFileTracingRoot: projectRoot,
@@ -114,6 +114,8 @@ const nextConfig: NextConfig = {
   },
   turbopack: { root: projectRoot },
   experimental: {
+    // Keep local builds within a small, predictable worker budget.
+    cpus: 2,
     // Annotation saves PUT the whole PDF through src/proxy.ts; the 10MB
     // default silently truncates larger bodies instead of failing them.
     proxyClientMaxBodySize: MAX_PDF_BYTES,

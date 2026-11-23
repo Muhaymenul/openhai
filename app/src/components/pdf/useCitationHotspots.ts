@@ -21,6 +21,7 @@ import {
 import { findCitations } from "@/lib/pdf/citations";
 import type { ResolvedPdfDestination } from "@/lib/pdf/destinations";
 import { pdfTextChunks, pdfTextItems } from "@/lib/pdf/text-items";
+import { readerBibliographies } from "@/lib/pdf/bibliography-cache";
 import {
   assembleSegments,
   boxesIntersect,
@@ -53,6 +54,8 @@ interface UseCitationHotspotsOptions {
   /** Fired once per document when the bibliography scan lands, so the
    * owner can resolve chat-originated citations against it. */
   onBibliography?(bibliography: Bibliography): void;
+  /** Stable text revision; annotation-only saves do not change citations. */
+  contentKey?: string;
 }
 
 /** Only the trailing pages can hold a bibliography worth scanning. */
@@ -95,6 +98,8 @@ async function scanBibliography(
       chunks: pdfTextChunks(items),
     });
     pageNumber += 1;
+    // Let pointer, keyboard and paint work run between background pages.
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
   }
   return buildBibliography(pages);
 }
@@ -114,6 +119,7 @@ export function useCitationHotspots({
   enabled,
   onCitation,
   onBibliography,
+  contentKey,
 }: UseCitationHotspotsOptions): void {
   const onCitationRef = useRef(onCitation);
   const onBibliographyRef = useRef(onBibliography);
@@ -299,9 +305,18 @@ export function useCitationHotspots({
     // and the bytes still in flight. Text layers rendered before it lands
     // already queue in pendingLayers, so only the timing moves.
     const startScan = () => {
-      void scanBibliography(pdfDocument, () => disposed)
+      const cached = contentKey
+        ? readerBibliographies.get(contentKey)
+        : undefined;
+      void (
+        cached
+          ? Promise.resolve(cached)
+          : scanBibliography(pdfDocument, () => disposed)
+      )
         .then((scanned) => {
           if (disposed || !scanned) return;
+          if (contentKey && !cached)
+            readerBibliographies.set(contentKey, scanned);
           bibliography = scanned;
           onBibliographyRef.current?.(scanned);
           const layers = [...pendingLayers];
@@ -328,5 +343,5 @@ export function useCitationHotspots({
       eventBus.off("scalechanging", onScaleChanging);
       removeOverlays();
     };
-  }, [eventBus, pdfDocument]);
+  }, [eventBus, pdfDocument, contentKey]);
 }

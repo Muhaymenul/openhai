@@ -6,6 +6,8 @@ export interface GraphFilters {
   query: string;
   showCandidates: boolean;
   focusNodeId?: string | null;
+  paperIds?: string[];
+  relationKind?: string;
 }
 
 export interface FilteredGraph {
@@ -34,6 +36,12 @@ export function filterGraph(
   let edges = graph.edges.filter(
     (edge) =>
       edge.status !== "rejected" &&
+      (!filters.relationKind || edge.kind === filters.relationKind) &&
+      (!filters.paperIds ||
+        edge.evidence.every(
+          (source) =>
+            !source.paperId || filters.paperIds!.includes(source.paperId),
+        )) &&
       (filters.showCandidates || edge.status === "confirmed") &&
       (!filters.paperId ||
         edge.evidence.some((source) => source.paperId === filters.paperId)),
@@ -44,6 +52,10 @@ export function filterGraph(
   let nodes = graph.nodes.filter(
     (node) =>
       (filters.view !== "papers" || node.kind === "paper") &&
+      (!filters.paperIds ||
+        (node.paperId
+          ? filters.paperIds.includes(node.paperId)
+          : relatedIds.has(node.id))) &&
       (!filters.paperId ||
         node.paperId === filters.paperId ||
         relatedIds.has(node.id)),

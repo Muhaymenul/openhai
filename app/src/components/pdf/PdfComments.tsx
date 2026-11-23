@@ -257,7 +257,40 @@ export function PdfComments({
       if (disabled || !pdfDocument || (draft && draft.mode !== "view")) return;
       const target = event.target;
       if (!(target instanceof Element)) return;
-      const marker = target.closest<HTMLElement>(selector);
+      // A drag across a saved highlight belongs to the underlying text
+      // selection. A collapsed selection is a normal click/tap instead.
+      if (
+        controlled &&
+        !enabled &&
+        event.detail !== 0 &&
+        window.getSelection()?.isCollapsed === false
+      )
+        return;
+      let marker = target.closest<HTMLElement>(selector);
+      if (
+        !marker &&
+        controlled &&
+        !enabled &&
+        target.closest('[data-pdf-edit-mode="select"]')
+      ) {
+        const page = target.closest(".page[data-page-number]");
+        marker =
+          [
+            ...(page?.querySelectorAll<HTMLElement>(
+              ".annotationLayer .highlightAnnotation[data-annotation-id]",
+            ) ?? []),
+          ].find((highlight) =>
+            [...highlight.getClientRects()].some(
+              (rect) =>
+                rect.width > 0 &&
+                rect.height > 0 &&
+                event.clientX >= rect.left &&
+                event.clientX <= rect.right &&
+                event.clientY >= rect.top &&
+                event.clientY <= rect.bottom,
+            ),
+          ) ?? null;
+      }
       // Existing comments remain editable in normal selection mode.
       if (!enabled && !marker) return;
       const pageElement = target.closest<HTMLElement>(

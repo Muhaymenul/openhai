@@ -1,4 +1,6 @@
 .root {
+  min-width: 0;
+  max-width: 100%;
   line-height: 1.55;
   word-break: break-word;
 }
@@ -271,10 +273,15 @@
 
 /* Display math can be wider than a chat bubble. */
 .root :global(.katex-display) {
+  max-width: 100%;
   margin: 0.6em 0;
   overflow-x: auto;
   overflow-y: hidden;
   padding: 0.2em 0;
+}
+
+.root :global(.katex-display > .katex) {
+  white-space: nowrap;
 }
 
 .root button[data-paper-ref],

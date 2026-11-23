@@ -108,7 +108,7 @@ export function Markdown({
   // skips katex subtrees — MathML annotations hold raw TeX).
   const rehypePlugins: Options["rehypePlugins"] = [
     rehypeCollapsibleNumberedSections,
-    rehypeKatex,
+    [rehypeKatex, { trust: false, throwOnError: false, strict: false }],
   ];
   if (decorateRefs && (paperRefs || bibliography)) {
     rehypePlugins.push([rehypePaperRefs, { bibliography, refs: paperRefs }]);

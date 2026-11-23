@@ -1,5 +1,4 @@
 "use client";
-
 import { PdfReader, type PdfReaderEditState } from "@/components/pdf/PdfReader";
 import type {
   ResearchAnnotation,
@@ -11,8 +10,7 @@ import type {
   ResearchSelection,
   SourceRef,
 } from "@/lib/research/types";
-import { BookOpen, Highlighter, NotebookPen, Sparkles } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   errorText,
   isRunActive,
@@ -21,10 +19,16 @@ import {
   type PaperDetail,
 } from "./api";
 import { responseSources, type ResearchProposal } from "./reader-context";
+import { ReaderProjectMemory } from "./memory/ReaderProjectMemory";
+import { ReaderQuote, ReaderSidebarTabs } from "./memory/ReaderSidebarTabs";
+import {
+  latestDiscussion,
+  readerDiscussions,
+} from "./memory/reader-memory-state";
 import { ReaderAnnotations } from "./study/ReaderAnnotations";
 import { ReadingControls } from "./study/ReadingControls";
 import { ResizableReader } from "./reader-layout/ResizableReader";
-import { ReaderTextSize, useReaderTextSize } from "./study/ReaderTextSize";
+import { useReaderTextSize } from "./study/ReaderTextSize";
 import type { LearningRequest } from "@/lib/research/learning-types";
 import { learningTitle } from "@/lib/research/learning-types";
 import { NoteEditor, type NoteDraft } from "./learning/NoteEditor";
@@ -50,6 +54,7 @@ import { questionSignature } from "./qa/question-draft";
 import { useHighlightColor } from "./annotations/useHighlightColor";
 import { HighlightUndoNotice } from "./annotations/HighlightUndoNotice";
 import { captureReaderSelection } from "./reader-layout/capture-selection";
+import { coalesceRequest } from "./reader-layout/coalesce-request";
 import { findPassageDiscussion } from "./qa/discussion/passage-thread";
 import styles from "./styles";
 export interface ReaderJump {
@@ -62,7 +67,7 @@ export function ResearchReader({
   paper,
   papers,
   knowledge,
-  history,
+  history: allHistory,
   jump,
   onRefresh,
   onOpenSource,
@@ -79,6 +84,7 @@ export function ResearchReader({
   notify(message: string, error?: boolean): void;
   onOpenReview(deckId: string, paperId: string): void;
 }) {
+  const history = useMemo(() => readerDiscussions(allHistory), [allHistory]);
   const [detail, setDetail] = useState<PaperDetail | null>(null);
   const [tab, setTab] = useState<"ai" | "notes" | "annotations">("ai");
   const textSize = useReaderTextSize();
@@ -100,14 +106,12 @@ export function ResearchReader({
     referenceConceptIds,
     setReferenceConceptIds,
   } = questionDraft;
+  const [projectId, setProjectId] = useState("");
   const activeSourceIds = sourcePaperIds.filter((id) =>
     papers.some((entry) => entry.id === id),
   );
-  const [run, setRun] = useState<ResearchRun | null>(
-    () =>
-      history
-        .filter((entry) => entry.paperId === paper.id && entry.mode !== "graph")
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] ?? null,
+  const [run, setRun] = useState<ResearchRun | null>(() =>
+    latestDiscussion(history, paper.id),
   );
   const [starting, setStarting] = useState(false);
   const [connectionWarning, setConnectionWarning] = useState("");
@@ -141,17 +145,22 @@ export function ResearchReader({
     dirty: false,
     saving: false,
   });
-  const [readerGeneration, setReaderGeneration] = useState(0);
   const active = starting || isRunActive(run);
   const src = "/api/research/papers/" + paper.id + "/pdf";
   useEffect(() => {
     assistantScroll.current?.scrollTo({ top: 0 });
   }, [run?.id]);
 
+  const readDetail = useMemo(
+    () =>
+      coalesceRequest(() => researchApi<PaperDetail>("/papers/" + paper.id)),
+    [paper.id],
+  );
+  const detailPaperId = useRef(paper.id);
   const loadDetail = useCallback(async () => {
-    const result = await researchApi<PaperDetail>("/papers/" + paper.id);
-    setDetail(result);
-  }, [paper.id]);
+    const result = await readDetail();
+    if (detailPaperId.current === result.paper.id) setDetail(result);
+  }, [readDetail]);
   function canWriteAnnotation() {
     if (nativeEdit.current.dirty || nativeEdit.current.saving) {
       notify("请等待当前批注保存完成。", true);
@@ -165,31 +174,38 @@ export function ResearchReader({
     color: highlightColor.color,
     beforeWrite: canWriteAnnotation,
     onSaved: async () => {
-      setReaderGeneration((generation) => generation + 1);
+      const browserSelection = window.getSelection();
+      if (
+        browserSelection?.anchorNode &&
+        readerRoot.current?.contains(browserSelection.anchorNode)
+      )
+        browserSelection.removeAllRanges();
       setSelectionToolsVisible(false);
       await loadDetail();
-      await onRefresh();
     },
     notify,
   });
   useEffect(() => {
-    void researchApi<PaperDetail>("/papers/" + paper.id)
-      .then(setDetail)
-      .catch((error: unknown) => notify(errorText(error), true));
-  }, [paper.id, notify]);
+    detailPaperId.current = paper.id;
+    let disposed = false;
+    void readDetail()
+      .then((result) => {
+        if (!disposed && result.paper.id === paper.id) setDetail(result);
+      })
+      .catch((error: unknown) => {
+        if (!disposed) notify(errorText(error), true);
+      });
+    return () => {
+      disposed = true;
+    };
+  }, [paper.id, readDetail, notify]);
 
   const onPdfEdit = useCallback(
     (state: PdfReaderEditState) => {
-      const hadEdits = nativeEdit.current.dirty || nativeEdit.current.saving;
       nativeEdit.current = state;
       if (state.dirty || state.saving) setSelection(null);
-      if (hadEdits && !state.dirty && !state.saving) {
-        void loadDetail().catch((error: unknown) =>
-          notify(errorText(error), true),
-        );
-      }
     },
-    [loadDetail, notify, setSelection],
+    [setSelection],
   );
   const activeRunId = run && isRunActive(run) ? run.id : null;
   useEffect(() => {
@@ -276,6 +292,7 @@ export function ResearchReader({
     try {
       const result = await postJson<{ run: ResearchRun }>("/runs", {
         paperId: paper.id,
+        projectId: projectId || undefined,
         question:
           value ||
           (mode === "card"
@@ -490,10 +507,8 @@ export function ResearchReader({
         },
       );
       setCommentOpen(false);
-      setReaderGeneration((generation) => generation + 1);
       setSelectionToolsVisible(false);
       await loadDetail();
-      await onRefresh();
       notify(
         result.annotation.pdfSaved
           ? "评论已保存。"
@@ -695,12 +710,15 @@ export function ResearchReader({
             <PdfReader
               compactToolbar
               onQuickComment={(page) => prepareComment("", page)}
-              key={readerGeneration}
+              documentVersion={detail?.paper.pdfEtag}
+              contentRevision={
+                detail?.paper.contentRevision ?? paper.contentRevision
+              }
               onEditStateChange={onPdfEdit}
               onDocumentSaved={() => {
-                void loadDetail()
-                  .then(onRefresh)
-                  .catch((error: unknown) => notify(errorText(error), true));
+                void loadDetail().catch((error: unknown) =>
+                  notify(errorText(error), true),
+                );
               }}
               src={src}
               title={paper.title}
@@ -756,41 +774,19 @@ export function ResearchReader({
             onUndo={() => void quickHighlight.undo()}
             onDismiss={quickHighlight.dismiss}
           />
-          {jump?.quote && (
-            <div className={styles.jumpQuote}>
-              <BookOpen size={13} />
-              <span>来源摘录：{jump.quote}</span>
-            </div>
-          )}
+          <ReaderQuote quote={jump?.quote} />
         </section>
         <aside
           className={styles.readerSidebar}
           data-ai-text-size={textSize.size}
         >
-          <div className={styles.readerTabs}>
-            <button
-              className={tab === "ai" ? styles.readerTabActive : ""}
-              onClick={() => setTab("ai")}
-            >
-              <Sparkles size={15} />
-              阅读助手
-            </button>
-            <button
-              className={tab === "notes" ? styles.readerTabActive : ""}
-              onClick={() => setTab("notes")}
-            >
-              <NotebookPen size={15} />
-              笔记<span>{detail?.notes.length ?? 0}</span>
-            </button>
-            <button
-              className={tab === "annotations" ? styles.readerTabActive : ""}
-              onClick={() => setTab("annotations")}
-            >
-              <Highlighter size={15} />
-              批注
-            </button>
-            <ReaderTextSize size={textSize.size} onChange={textSize.change} />
-          </div>
+          <ReaderSidebarTabs
+            tab={tab}
+            onTab={setTab}
+            notes={detail?.notes.length ?? 0}
+            size={textSize.size}
+            onSize={textSize.change}
+          />
           {tab === "ai" && (
             <>
               <div className={styles.aiScroll} ref={assistantScroll}>
@@ -810,6 +806,13 @@ export function ResearchReader({
                   answerStyle={answerStyle}
                   selection={selection}
                   onRun={(mode, prompt) => void start(mode, prompt)}
+                />
+                <ReaderProjectMemory
+                  paperId={paper.id}
+                  projectId={projectId}
+                  onProject={setProjectId}
+                  run={run}
+                  disabled={active}
                 />
                 {run && (
                   <>
@@ -946,10 +949,8 @@ export function ResearchReader({
                 return true;
               }}
               onSaved={async () => {
-                setReaderGeneration((generation) => generation + 1);
                 setSelection(null);
                 await loadDetail();
-                await onRefresh();
               }}
             />
           )}

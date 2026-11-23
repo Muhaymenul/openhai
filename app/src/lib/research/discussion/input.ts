@@ -3,9 +3,9 @@ import type { StartResearchRunInput } from "../types";
 import { effectiveAnswerStyle } from "./context";
 
 /** Validate selected evidence and concept IDs before any model call. */
-export function prepareQuestionInput(
+export async function prepareQuestionInput(
   input: StartResearchRunInput,
-): StartResearchRunInput {
+): Promise<StartResearchRunInput> {
   const answerStyle = effectiveAnswerStyle(input);
   const referenceConceptIds =
     input.mode === "ask" || input.mode === "concept"
@@ -42,7 +42,7 @@ export function prepareQuestionInput(
           contentRevision: selection.contentRevision,
         },
       ],
-      readWorkspace(),
+      await readWorkspace(),
       input.paperId,
     );
     selection = {

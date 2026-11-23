@@ -18,6 +18,7 @@ import { isRunActive, runLabels } from "../api";
 import { responseSources, type ResearchProposal } from "../reader-context";
 import { ProposalCards } from "../proposals/ProposalCards";
 import { SourceChips } from "../ResearchUi";
+import { RememberButton } from "../memory/RememberButton";
 import { ExplanationActions } from "../learning/ExplanationActions";
 import { parseReviewMarkdown } from "../learning/review-actions";
 import { studyLabel } from "../study/frameworks";
@@ -218,6 +219,14 @@ export function ReaderAnswer({
             )}
           {run.answer && !isRunActive(run) && (
             <div className={styles.resultActions}>
+              {run.status === "completed" && (
+                <RememberButton
+                  paperId={paper.id}
+                  text={selectedAnswer || run.answer}
+                  sources={sources}
+                  runId={run.id}
+                />
+              )}
               {selectedAnswer && (
                 <button
                   className={styles.primaryButton}

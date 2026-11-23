@@ -1,0 +1,252 @@
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.merge {
+  border-top: 1px solid #e1e6de;
+  border-bottom: 1px solid #e1e6de;
+  padding: 10px 0;
+}
+.merge summary {
+  cursor: pointer;
+  color: #5b6f5f;
+  font-size: 13px;
+}
+.merge .controls {
+  margin-top: 10px;
+}
+.mergeRecord {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 12px;
+}
+.mergeRecord button {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: #476a53;
+}
+.controls select {
+  height: 34px;
+  max-width: 180px;
+  border: 1px solid #d9dfdc;
+  border-radius: 4px;
+  padding: 0 7px;
+  color: #424f46;
+  background: #fff;
+  font: inherit;
+}
+.button,
+.dialog button.primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
+  min-height: 34px;
+  border: 1px solid #d5ddd5;
+  border-radius: 5px;
+  background: #fff;
+  color: #354e3d;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.primary {
+  background: #344e3d;
+  color: #fff;
+  border-color: #344e3d;
+}
+.dialog button.button,
+.controls button.button {
+  color: #354e3d;
+}
+.button:disabled,
+.primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  background: #14201966;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.dialog {
+  position: relative;
+  width: min(1160px, 100%);
+  max-height: 88dvh;
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 25px;
+  border: 1px solid #d8dfd8;
+  border-radius: 8px;
+  background: #fff;
+  color: #283b2d;
+  font-size: 14px;
+  line-height: 1.65;
+  box-shadow: 0 15px 60px #0003;
+}
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 17px;
+}
+.heading h2 {
+  font-size: 23px;
+  margin: 0;
+}
+.heading button {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: #556559;
+}
+.selection {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 22px;
+  max-height: 160px;
+  overflow: auto;
+  padding: 12px;
+  background: #f4f7f1;
+  margin-bottom: 14px;
+}
+.selection label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+.selection input {
+  margin-top: 5px;
+}
+.question {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 15px;
+  color: #68736c;
+}
+.question textarea {
+  font: inherit;
+  line-height: 1.6;
+  resize: vertical;
+  border: 1px solid #dce2da;
+  padding: 9px 12px;
+  border-radius: 4px;
+  color: #2d3932;
+}
+.actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 12px 0;
+}
+.actions a {
+  color: #3b6149;
+  text-decoration: none;
+  border-bottom: 1px solid #ccd8c8;
+}
+.status {
+  color: #647366;
+  font-size: 13px;
+}
+.error {
+  color: #a13e32;
+}
+.tableWrap {
+  max-width: 100%;
+  overflow: auto;
+  margin-top: 18px;
+}
+.table {
+  width: 100%;
+  min-width: 780px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.table th {
+  background: #f1f4ee;
+  color: #536255;
+  text-align: left;
+  padding: 10px;
+  border-bottom: 1px solid #cbd4c7;
+  font-weight: 500;
+}
+.table td {
+  vertical-align: top;
+  padding: 12px 10px;
+  border-bottom: 1px solid #e1e6de;
+  min-width: 125px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.table td:first-child {
+  min-width: 170px;
+  max-width: 240px;
+  font-weight: 600;
+}
+.table td p {
+  margin: 0 0 7px;
+}
+.history {
+  margin-top: 18px;
+}
+.history select {
+  max-width: 100%;
+  font: inherit;
+  padding: 7px;
+  border: 1px solid #d9dfd5;
+  background: #fff;
+  color: #3a4a3e;
+}
+.evidenceColumns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.evidenceColumns article {
+  min-width: 0;
+}
+.evidenceColumns h3 {
+  font-size: 17px;
+  margin: 0 0 17px;
+  font-weight: 600;
+}
+.evidenceColumns blockquote {
+  padding: 14px;
+  margin: 12px 0 8px;
+  border-left: 2px solid #78947e;
+  background: #f5f7f2;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.dialog :is(button, a, input, textarea, select):focus-visible {
+  outline: 2px solid #4b715b;
+  outline-offset: 3px;
+}
+@media (max-width: 700px) {
+  .backdrop {
+    padding: 12px;
+  }
+  .dialog {
+    padding: 17px;
+  }
+  .selection,
+  .evidenceColumns {
+    grid-template-columns: 1fr;
+  }
+  .controls {
+    width: 100%;
+  }
+}

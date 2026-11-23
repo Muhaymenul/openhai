@@ -135,7 +135,7 @@ describe("reversible uploaded-paper lifecycle", () => {
       rects: [],
       pdfEtag: paper.pdfEtag,
     });
-    const full = readWorkspace();
+    const full = await readWorkspace();
     const concept = full.knowledge[0];
     await getResearchGraph();
     const graph = await addManualGraphEdge({
@@ -152,25 +152,25 @@ describe("reversible uploaded-paper lifecycle", () => {
       label: "My decision",
     });
     const edge = graph.edges.find((item) => item.label === "My decision")!;
-    const before = readWorkspace();
+    const before = await readWorkspace();
     const bytes = fs.readFileSync(paperPdfPath(paper));
     const deleted = await request<{ paper: ResearchPaper }>(
       ["papers", paper.id],
       "DELETE",
-      { version: paperById(paper.id).version },
+      { version: (await paperById(paper.id)).version },
     );
     expect(deleted.response.status).toBe(200);
     expect(deleted.payload.paper.trashedAt).toBeTruthy();
     expect(fs.readFileSync(paperPdfPath(paper)).equals(bytes)).toBe(true);
-    expect(readWorkspace().notes).toEqual(before.notes);
-    expect(readWorkspace().annotations).toEqual(before.annotations);
-    expect(activeWorkspace().notes).toEqual([]);
-    expect(activeWorkspace().annotations).toEqual([]);
+    expect((await readWorkspace()).notes).toEqual(before.notes);
+    expect((await readWorkspace()).annotations).toEqual(before.annotations);
+    expect((await activeWorkspace()).notes).toEqual([]);
+    expect((await activeWorkspace()).annotations).toEqual([]);
     expect(
       (await getResearchGraph()).edges.some((item) => item.id === edge.id),
     ).toBe(false);
     expect(
-      readWorkspace().graph.edges.find((item) => item.id === edge.id),
+      (await readWorkspace()).graph.edges.find((item) => item.id === edge.id),
     ).toMatchObject({ status: "confirmed", version: edge.version });
     expect(
       (await request<{ papers: ResearchPaper[] }>(["papers"])).payload.papers,
@@ -198,8 +198,8 @@ describe("reversible uploaded-paper lifecycle", () => {
     expect(restored.response.status).toBe(200);
     expect(restored.payload.paper.id).toBe(paper.id);
     expect(restored.payload.paper.trashedAt).toBeUndefined();
-    expect(activeWorkspace().notes[0]).toEqual(note);
-    expect(activeWorkspace().annotations).toEqual(before.annotations);
+    expect((await activeWorkspace()).notes[0]).toEqual(note);
+    expect((await activeWorkspace()).annotations).toEqual(before.annotations);
     expect(
       (await getResearchGraph()).edges.find((item) => item.id === edge.id),
     ).toMatchObject({ status: "confirmed", version: edge.version });
@@ -234,14 +234,14 @@ describe("reversible uploaded-paper lifecycle", () => {
         .response.status,
     ).toBe(409);
     await restoreResearchPaper(paper.id, deleted.version);
-    expect(paperById(paper.id).version).toBe(3);
+    expect((await paperById(paper.id)).version).toBe(3);
   });
 
   it("does not resurrect a trashed import or silently reimport the same bytes", async () => {
     const { paper, bytes, pages } = await fixture();
     const deleted = await trashResearchPaper(paper.id, paper.version);
     await recoverResearchImports();
-    expect(activeWorkspace().papers).toHaveLength(0);
+    expect((await activeWorkspace()).papers).toHaveLength(0);
     await expect(
       importPaper({
         bytes,
@@ -264,8 +264,8 @@ describe("reversible uploaded-paper lifecycle", () => {
       state.papers = [];
     });
     await recoverResearchImports();
-    expect(readWorkspace().papers[0].trashedAt).toBe(deleted.trashedAt);
-    expect(activeWorkspace().papers).toHaveLength(0);
+    expect((await readWorkspace()).papers[0].trashedAt).toBe(deleted.trashedAt);
+    expect((await activeWorkspace()).papers).toHaveLength(0);
   });
 
   it("excludes deleted evidence from full-text search, cross-paper notes and model context without destroying it", async () => {
@@ -283,12 +283,12 @@ describe("reversible uploaded-paper lifecycle", () => {
       body: "Source-only background",
       sources: [{ paperId: paper.id, page: 1 }],
     });
-    expect(searchResearch("UniqueQuasar").length).toBeGreaterThan(0);
+    expect((await searchResearch("UniqueQuasar")).length).toBeGreaterThan(0);
     const initialInput = {
       paperId: other.id,
       mode: "ask" as const,
       question: "Explain the current paper",
-      context: researchContext(other.id),
+      context: await researchContext(other.id),
     };
     const oldScope = researchContextScope(initialInput);
     expect(researchSourcePaperIds(initialInput)).toContain(paper.id);
@@ -300,22 +300,27 @@ describe("reversible uploaded-paper lifecycle", () => {
       sourcePaperIds: researchSourcePaperIds(initialInput),
     });
     await trashResearchPaper(paper.id, paper.version);
-    expect(searchResearch("UniqueQuasar")).toEqual([]);
-    expect(researchContext(other.id).notes).toEqual([]);
-    const nextInput = { ...initialInput, context: researchContext(other.id) };
+    expect(await searchResearch("UniqueQuasar")).toEqual([]);
+    expect((await researchContext(other.id)).notes).toEqual([]);
+    const nextInput = {
+      ...initialInput,
+      context: await researchContext(other.id),
+    };
     const nextScope = researchContextScope(nextInput);
     expect(nextScope).not.toBe(oldScope);
     expect(researchSourcePaperIds(nextInput)).not.toContain(paper.id);
     expect(canReuseResearchSession(priorRun, nextInput, nextScope)).toBe(false);
     expect(
-      researchContext(other.id).knowledge.some(
+      (await researchContext(other.id)).knowledge.some(
         (item) => item.title === "UniqueQuasar concept",
       ),
     ).toBe(false);
-    expect(() => researchContext(paper.id)).toThrow("回收站");
-    expect(readWorkspace().notes).toHaveLength(1);
+    await expect(
+      (async () => await researchContext(paper.id))(),
+    ).rejects.toThrow("回收站");
+    expect((await readWorkspace()).notes).toHaveLength(1);
     expect(
-      readWorkspace().knowledge.some(
+      (await readWorkspace()).knowledge.some(
         (item) => item.title === "UniqueQuasar concept",
       ),
     ).toBe(true);
@@ -417,13 +422,13 @@ describe("reversible uploaded-paper lifecycle", () => {
       });
     });
     expect((await request([])).response.status).toBe(200);
-    expect(readWorkspace().pendingAnnotations).toHaveLength(1);
-    expect(listPlannerTasks()).toEqual([]);
-    expect(plannerCalendar([task])).not.toContain(task.id);
-    expect(readWorkspace().plannerTasks).toEqual([task]);
+    expect((await readWorkspace()).pendingAnnotations).toHaveLength(1);
+    expect(await listPlannerTasks()).toEqual([]);
+    expect(await plannerCalendar([task])).not.toContain(task.id);
+    expect((await readWorkspace()).plannerTasks).toEqual([task]);
     await applyGraphRun(run);
     expect(
-      readWorkspace().graph.nodes.some(
+      (await readWorkspace()).graph.nodes.some(
         (item) => item.title === "Late extraction",
       ),
     ).toBe(false);

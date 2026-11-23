@@ -20,7 +20,6 @@ def config():
     value = PaperFlowConfig()
     value.llm.provider = "openai"
     value.llm.default_model = "test-model"
-    value.llm.base_url = "http://127.0.0.1:9999/v1"
     value.llm.api_key = "test-private-value"
     value.compaction.auto_threshold = .01
     return value

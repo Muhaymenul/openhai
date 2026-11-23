@@ -214,6 +214,7 @@ class OpenAiCompatProvider:
         *,
         step: int = 0,
         system: str | None = None,
+        max_tokens: int = 8192,
     ) -> LlmResponse:
         await bus.publish(
             LlmModelSelectedEvent(run_id=run_id, model=self._model, strategy="static", ts=_now())
@@ -221,7 +222,7 @@ class OpenAiCompatProvider:
 
         payload: dict[str, Any] = {
             "model": self._model,
-            "max_tokens": 8192,
+            "max_tokens": max_tokens,
             "stream": True,
             "stream_options": {"include_usage": True},
             "messages": convert_messages(messages, system or _SYSTEM_PROMPT),

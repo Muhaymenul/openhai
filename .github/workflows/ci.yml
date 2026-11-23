@@ -29,6 +29,18 @@ jobs:
       - run: pytest -q services/tests
   web:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: jiaoyan
+          POSTGRES_DB: jiaoyan
+          POSTGRES_PASSWORD: ci-only-local-fixture
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U jiaoyan -d jiaoyan"
+          --health-interval 5s --health-timeout 5s --health-retries 12
     defaults:
       run:
         working-directory: app
@@ -47,3 +59,21 @@ jobs:
         env:
           RESEARCH_LOCAL_MODE: '1'
           NEXT_TELEMETRY_DISABLED: '1'
+
+      - run: npm run test
+        env:
+          RESEARCH_POSTGRES_TEST: '1'
+          RESEARCH_DATABASE_HOST: '127.0.0.1'
+          RESEARCH_DATABASE_PORT: '5432'
+          RESEARCH_DATABASE_NAME: jiaoyan
+          RESEARCH_DATABASE_USER: jiaoyan
+          RESEARCH_DATABASE_PASSWORD: ci-only-local-fixture
+          RESEARCH_DATABASE_SCHEMA: qa_pg_ci
+  desktop:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --test desktop/tests/*.test.cjs

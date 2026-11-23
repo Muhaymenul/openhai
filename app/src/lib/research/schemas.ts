@@ -111,6 +111,7 @@ export const knowledgePatchSchema = z.object({
   version: z.number().int().positive().optional(),
 });
 export const runSchema = z.object({
+  projectId: idSchema.optional(),
   answerStyle: z.enum(["discussion", "grounded"]).optional(),
   referenceConceptIds: z
     .array(idSchema)

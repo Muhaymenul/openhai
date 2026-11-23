@@ -29,7 +29,7 @@ import {
   readWorkspace,
   writePaperPages,
 } from "./store";
-import type { ResearchAnnotation, ResearchPage } from "./types";
+import type { ResearchAnnotation, ResearchPage, ResearchPaper } from "./types";
 import type { z } from "zod";
 import type { annotationSchema } from "./schemas";
 import {
@@ -42,6 +42,7 @@ import {
 } from "./annotation-mutations";
 import { managedMarks } from "./annotation-records";
 import { sameHighlightSelection } from "./highlight-selection";
+import { matchesPdfQuote } from "./pdf-quote";
 
 const MAX_PDF = 100 * 1024 * 1024;
 function runPython(command: string, args: string[]): Promise<string> {
@@ -147,7 +148,7 @@ export async function researchPdfResponse(
   request: Request,
   paperId: string,
 ): Promise<Response> {
-  const paper = paperById(paperId);
+  const paper = await paperById(paperId);
   const file = await readVersionedPdfFile(
     paper.library.topic,
     paper.library.slug,
@@ -179,7 +180,7 @@ export async function saveResearchPdf(
   request: Request,
   paperId: string,
 ): Promise<{ etag: string }> {
-  const paper = paperById(paperId);
+  const paper = await paperById(paperId);
   const expected = request.headers.get("if-match");
   if (!expected || !/^"[a-f0-9]{64}"$/.test(expected))
     throw new ResearchError("保存PDF需要If-Match版本", 428);
@@ -212,7 +213,7 @@ export async function saveResearchPdf(
     writePaperPages(current, parsed.pages);
   });
   await synchronizeAnnotations(paperId);
-  ensureResearchIndex(true);
+  await ensureResearchIndex(true);
   return result;
 }
 export async function saveNativeComment(
@@ -220,7 +221,7 @@ export async function saveNativeComment(
   action: PdfCommentAction,
   expected: string,
 ): Promise<{ etag: string }> {
-  const paper = paperById(paperId);
+  const paper = await paperById(paperId);
   const result = await rewritePdf(
     paper.library.topic,
     paper.library.slug,
@@ -316,9 +317,9 @@ async function appendAnnotation(
   return doc.save();
 }
 export async function recoverAnnotations(): Promise<void> {
-  const pending = activeWorkspace().pendingAnnotations;
+  const pending = (await activeWorkspace()).pendingAnnotations;
   for (const item of pending) {
-    const paper = paperById(item.annotation.paperId);
+    const paper = await paperById(item.annotation.paperId);
     const current = await readVersionedPdf(
       paper.library.topic,
       paper.library.slug,
@@ -356,22 +357,28 @@ export async function createAnnotation(
   input: z.infer<typeof annotationSchema>,
 ): Promise<{
   annotation: ResearchAnnotation;
-  paper: ReturnType<typeof paperById>;
+  paper: ResearchPaper;
   created: boolean;
 }> {
   await recoverAnnotations();
-  const paper = paperById(input.paperId);
+  const paper = await paperById(input.paperId);
   const fingerprint = digest({ ...input, actionId: undefined });
   const id = input.actionId || randomUUID();
-  const existing = readWorkspace().actions[id];
+  const existing = (await readWorkspace()).actions[id];
   if (existing) {
     if (existing.digest !== fingerprint)
       throw new ResearchError("此动作 ID 已用于不同批注", 409);
-    const saved = readWorkspace().annotations.find((a) => a.id === existing.id);
+    const saved = (await readWorkspace()).annotations.find(
+      (a) => a.id === existing.id,
+    );
     if (saved)
-      return { annotation: saved, paper: paperById(paper.id), created: false };
+      return {
+        annotation: saved,
+        paper: await paperById(paper.id),
+        created: false,
+      };
     if (
-      readWorkspace().pendingAnnotations.some(
+      (await readWorkspace()).pendingAnnotations.some(
         (p) => p.annotation.id === existing.id,
       )
     )
@@ -394,9 +401,7 @@ export async function createAnnotation(
     throw new ResearchError("正文已改变，请重新选择原文", 409);
   const quote = input.quote ?? input.text ?? "";
   const text = paperPages(paper).find((p) => p.page === input.page)?.text || "";
-  const norm = (v: string) =>
-    v.normalize("NFKC").replace(/\s+/g, "").toLowerCase();
-  if (quote && text && !norm(text).includes(norm(quote)))
+  if (quote && text && !matchesPdfQuote(text, quote))
     throw new ResearchError("所选文字未在指定页找到，请核对页码");
   const rects = input.rects.length
     ? input.rects
@@ -412,7 +417,7 @@ export async function createAnnotation(
   if (rects.length) {
     const document = await loadEditablePdf(version.bytes);
     const owned = new Set(managedMarks(document).map((mark) => mark.name));
-    const duplicate = readWorkspace().annotations.find(
+    const duplicate = (await readWorkspace()).annotations.find(
       (annotation) =>
         owned.has(annotation.pdfName ?? `jy-${annotation.id}`) &&
         sameHighlightSelection(annotation, {
@@ -455,7 +460,11 @@ export async function createAnnotation(
           digest: fingerprint,
         };
       });
-      return { annotation: saved, paper: paperById(paper.id), created: false };
+      return {
+        annotation: saved,
+        paper: await paperById(paper.id),
+        created: false,
+      };
     }
   }
   const now = new Date().toISOString();
@@ -493,7 +502,7 @@ export async function createAnnotation(
     await commitAnnotation(annotation, result.etag);
     return {
       annotation: { ...annotation, pdfSaved: true },
-      paper: paperById(paper.id),
+      paper: await paperById(paper.id),
       created: true,
     };
   } catch (error) {
@@ -506,7 +515,7 @@ export async function createAnnotation(
       await commitAnnotation(annotation, current.etag);
       return {
         annotation: { ...annotation, pdfSaved: true },
-        paper: paperById(paper.id),
+        paper: await paperById(paper.id),
         created: true,
       };
     } else

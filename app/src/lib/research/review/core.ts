@@ -47,11 +47,11 @@ function visibleDecks(state: WorkspaceState): ReviewDeck[] {
   });
 }
 
-export function listReviewDecks(
+export async function listReviewDecks(
   paperId?: string,
   noteId?: string,
-): ReviewDeck[] {
-  const state = readWorkspace();
+): Promise<ReviewDeck[]> {
+  const state = await readWorkspace();
   if (paperId) paperById(safeId(paperId), state);
   if (noteId) safeId(noteId);
   return visibleDecks(state)
@@ -72,8 +72,8 @@ function getDeck(state: WorkspaceState, id: string): ReviewDeck {
   return deck;
 }
 
-export function getReviewDeck(id: string): ReviewDeck {
-  const state = readWorkspace();
+export async function getReviewDeck(id: string): Promise<ReviewDeck> {
+  const state = await readWorkspace();
   getDeck(state, id);
   return visibleDecks(state).find((entry) => entry.id === id)!;
 }

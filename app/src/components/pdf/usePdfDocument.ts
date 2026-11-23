@@ -35,6 +35,11 @@ import {
 } from "@/lib/pdf/view/reading-position";
 import type { ViewerEventBus } from "./useCitationHotspots";
 import { installDarkPdfRendering } from "./rendering/darkPdfRendering";
+import {
+  capturePdfView,
+  restorePdfView,
+  type PdfLiveView,
+} from "@/lib/pdf/view/document-refresh";
 
 const READING_POSITION_WRITE_DELAY_MS = 500;
 
@@ -146,7 +151,7 @@ export interface PdfDocumentHandle {
   dirtyRef: RefObject<boolean>;
   savingRef: RefObject<boolean>;
   /** Page and scale to re-apply on the next `pagesinit` (document remount). */
-  restoreViewRef: RefObject<{ page: number; scale: number } | null>;
+  restoreViewRef: RefObject<PdfLiveView | null>;
   /**
    * Marks the current view as chosen by the reader. The toolbar's page and
    * zoom buttons live outside the scroll container whose input listeners
@@ -216,7 +221,7 @@ export function usePdfDocument({
   const pendingPenRef = useRef(false);
   const dirtyRef = useRef(false);
   const savingRef = useRef(false);
-  const restoreViewRef = useRef<{ page: number; scale: number } | null>(null);
+  const restoreViewRef = useRef<PdfLiveView | null>(null);
   // True once the reader wheels, taps, or keys inside the current document,
   // or presses a toolbar page/zoom button (via `noteUserMove`); a server
   // position that arrives after that must not yank the view away. Only real
@@ -323,6 +328,7 @@ export function usePdfDocument({
         const pdfjs = await import("pdfjs-dist");
         const { EventBus, LinkTarget, PDFLinkService, PDFViewer } =
           await import("pdfjs-dist/web/pdf_viewer.mjs");
+        if (disposed) return;
 
         pdfjs.GlobalWorkerOptions.workerSrc = new URL(
           "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -498,6 +504,7 @@ export function usePdfDocument({
               restore.page,
               pdfViewer.pagesCount,
             );
+            restorePdfView(restore, pdfViewer, container);
           } else if (resume) {
             // A remembered zoom only makes sense on a comparable surface;
             // the page transfers regardless.
@@ -602,13 +609,32 @@ export function usePdfDocument({
         // version up front, and one byte is enough to read it off the
         // response headers. GET rather than HEAD, because HEAD applies a
         // recent-write guard that answers 409 mid-save.
-        if (editable) {
+        let refreshedBytes: Uint8Array | undefined;
+        if (editable && documentGeneration > 0) {
+          // Annotation refreshes need the complete saved PDF for native
+          // editing anyway. One response pins bytes and ETag together and
+          // avoids many range requests rereading the same local file.
+          const response = await fetch(src, {
+            cache: "no-store",
+            credentials: "same-origin",
+            signal: abortController.signal,
+          });
+          if (!response.ok)
+            throw new Error(`PDF request failed with ${response.status}.`);
+          const nextEtag = normalizeEtag(response.headers.get("etag"));
+          if (!nextEtag)
+            throw new Error("The PDF did not include a save version.");
+          refreshedBytes = new Uint8Array(await response.arrayBuffer());
+          if (disposed) return;
+          etagRef.current = nextEtag;
+        } else if (editable) {
           const probe = await fetch(src, {
             headers: { range: "bytes=0-0" },
             cache: "no-store",
             credentials: "same-origin",
             signal: abortController.signal,
           });
+          if (disposed) return;
           if (!probe.ok) {
             throw new Error(`PDF request failed with ${probe.status}.`);
           }
@@ -628,10 +654,11 @@ export function usePdfDocument({
         // `?v=<etag>` + a 412 if that ever bites. And if a paper still paints
         // late, `disableAutoFetch: true` narrows the fetch to the current
         // view at the cost of a slower first save.
-        loadingTask = pdfjs.getDocument({
-          url: src,
-          withCredentials: true,
-        });
+        loadingTask = pdfjs.getDocument(
+          refreshedBytes
+            ? { data: refreshedBytes }
+            : { url: src, withCredentials: true },
+        );
         const document = await loadingTask.promise;
         if (disposed) {
           await loadingTask.destroy();
@@ -741,10 +768,7 @@ export function usePdfDocument({
                 setSaveStatus("已保存");
                 if (canonicalizedSave) {
                   canonicalizedSave = false;
-                  restoreViewRef.current = {
-                    page: pdfViewer.currentPageNumber,
-                    scale: pdfViewer.currentScale,
-                  };
+                  restoreViewRef.current = capturePdfView(pdfViewer, container);
                   setDocumentGeneration((generation) => generation + 1);
                 }
               }

@@ -5,7 +5,9 @@ import type {
   GraphEdge,
   GraphNode,
   SourceRef,
+  ResearchPaper,
 } from "@/lib/research/types";
+import type { MemorySnapshot } from "@/lib/research/memory/types";
 import {
   ArrowLeft,
   ArrowRight,
@@ -25,29 +27,41 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
-import { errorText, postJson } from "./api";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { errorText, postJson, researchApi } from "./api";
 import { SourceChips } from "./ResearchUi";
 import { filterGraph, nodeKindLabel } from "./graph/graph-data";
 import { useGraphCanvas } from "./graph/use-graph-canvas";
 import styles from "./graph/graph.module.css";
+import { ComparisonPanel } from "./relations/ComparisonPanel";
+import { EvidenceCompare } from "./relations/EvidenceCompare";
+import { ConceptMergeControl } from "./relations/ConceptMergeControl";
 
 type Selection = { kind: "node" | "edge"; id: string } | null;
 
 export function ResearchGraph({
   graph,
+  papers,
   onRefresh,
   onOpenSource,
   notify,
 }: {
   graph: GraphData;
+  papers: ResearchPaper[];
   onRefresh(): Promise<void>;
   onOpenSource(source: SourceRef): void;
   notify(message: string, error?: boolean): void;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const exportMenu = useRef<HTMLDetailsElement>(null);
-  const [view, setView] = useState<"all" | "papers">("all");
+  const [view, setView] = useState<"all" | "papers">("papers");
+  const [projects, setProjects] = useState<MemorySnapshot["projects"]>([]);
+  const [projectId, setProjectId] = useState("");
+  const [relationKind, setRelationKind] = useState("");
+  const [year, setYear] = useState("");
+  const [layoutMode, setLayoutMode] = useState<"network" | "timeline">(
+    "network",
+  );
   const [paperId, setPaperId] = useState("");
   const [query, setQuery] = useState("");
   const [showCandidates, setShowCandidates] = useState(true);
@@ -56,11 +70,68 @@ export function ResearchGraph({
   const [list, setList] = useState<"nodes" | "candidates">("nodes");
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    const controller = new AbortController();
+    researchApi<MemorySnapshot>("/memory", { signal: controller.signal })
+      .then((data) => setProjects(data.projects))
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
+  const years = useMemo(
+    () =>
+      Object.fromEntries(
+        papers.map((paper) => [
+          paper.id,
+          /^\d{4}$/.test(String(paper.year)) ? Number(paper.year) : null,
+        ]),
+      ),
+    [papers],
+  );
+  const yearOptions = useMemo(
+    () =>
+      [
+        ...new Set(
+          Object.values(years).filter(
+            (value): value is number => value !== null,
+          ),
+        ),
+      ].sort((a, b) => a - b),
+    [years],
+  );
+  const scopedPaperIds = useMemo(() => {
+    if (!projectId && !year) return undefined;
+    const project = projects.find((item) => item.id === projectId);
+    return papers
+      .filter(
+        (paper) =>
+          (!project || project.paperIds.includes(paper.id)) &&
+          (!year || String(years[paper.id]) === year),
+      )
+      .map((paper) => paper.id);
+  }, [projectId, projects, papers, year, years]);
 
   const visible = useMemo(
     () =>
-      filterGraph(graph, { view, paperId, query, showCandidates, focusNodeId }),
-    [graph, view, paperId, query, showCandidates, focusNodeId],
+      filterGraph(graph, {
+        view: layoutMode === "timeline" ? "papers" : view,
+        paperId,
+        paperIds: scopedPaperIds,
+        relationKind,
+        query,
+        showCandidates,
+        focusNodeId,
+      }),
+    [
+      graph,
+      view,
+      paperId,
+      scopedPaperIds,
+      relationKind,
+      query,
+      showCandidates,
+      focusNodeId,
+      layoutMode,
+    ],
   );
   const nodesById = useMemo(
     () => new Map(graph.nodes.map((node) => [node.id, node])),
@@ -117,6 +188,15 @@ export function ResearchGraph({
     visible,
     selectedId: selectedNode?.id ?? selectedEdge?.id ?? null,
     onSelect: select,
+    layoutMode,
+    years,
+    storageKey: [
+      projectId || "all",
+      year || "all",
+      relationKind || "all",
+      view,
+      paperId,
+    ].join(":"),
   });
 
   function resetScope() {
@@ -150,6 +230,22 @@ export function ResearchGraph({
       await postJson("/graph", { action: "suggest" });
       await onRefresh();
       notify("关系候选已更新。");
+    } catch (error) {
+      notify(errorText(error), true);
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  async function matchCitations() {
+    setGenerating(true);
+    try {
+      await postJson("/relations", {
+        action: "citations",
+        paperIds: scopedPaperIds,
+      });
+      await onRefresh();
+      notify("文献间的引用关系已更新");
     } catch (error) {
       notify(errorText(error), true);
     } finally {
@@ -216,6 +312,12 @@ export function ResearchGraph({
       <header className={styles.heading}>
         <h1>知识图谱</h1>
         <div className={styles.actions}>
+          <ComparisonPanel
+            papers={papers}
+            onRefresh={onRefresh}
+            onOpenSource={onOpenSource}
+            notify={notify}
+          />
           <select
             className={styles.paperFilter}
             aria-label="筛选图谱论文"
@@ -320,6 +422,84 @@ export function ResearchGraph({
             候选关系
           </label>
         </div>
+        <div className={styles.filters}>
+          <select
+            aria-label="图谱研究课题"
+            value={projectId}
+            onChange={(event) => {
+              setProjectId(event.target.value);
+              resetScope();
+            }}
+          >
+            <option value="">全部课题</option>
+            {projects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.title}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="关系类型"
+            value={relationKind}
+            onChange={(event) => {
+              setRelationKind(event.target.value);
+              resetScope();
+            }}
+          >
+            <option value="">全部关系</option>
+            {[
+              ...new Map(
+                graph.edges
+                  .filter((edge) => edge.status !== "rejected")
+                  .map((edge) => [edge.kind, edge.label]),
+              ).entries(),
+            ].map(([kind, label]) => (
+              <option key={kind} value={kind}>
+                {label}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="论文年份"
+            value={year}
+            onChange={(event) => {
+              setYear(event.target.value);
+              resetScope();
+            }}
+          >
+            <option value="">全部年份</option>
+            {yearOptions.map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+          <div
+            className={styles.layoutSwitch}
+            role="group"
+            aria-label="布局方式"
+          >
+            <button
+              aria-pressed={layoutMode === "network"}
+              onClick={() => setLayoutMode("network")}
+            >
+              网络
+            </button>
+            <button
+              aria-pressed={layoutMode === "timeline"}
+              onClick={() => setLayoutMode("timeline")}
+            >
+              时间线
+            </button>
+          </div>
+          <button
+            className={styles.citationButton}
+            disabled={generating}
+            onClick={() => void matchCitations()}
+          >
+            匹配引用
+          </button>
+        </div>
 
         <div className={styles.body}>
           <div className={styles.canvas}>
@@ -370,6 +550,10 @@ export function ResearchGraph({
                       setQuery("");
                       setPaperId("");
                       setView("all");
+                      setProjectId("");
+                      setRelationKind("");
+                      setYear("");
+                      setLayoutMode("network");
                       setShowCandidates(true);
                       resetScope();
                     }}
@@ -496,6 +680,11 @@ export function ResearchGraph({
                     )}
                   </div>
                   {selectedEdge.rationale && <p>{selectedEdge.rationale}</p>}
+                  <EvidenceCompare
+                    edge={selectedEdge}
+                    papers={papers}
+                    onOpenSource={onOpenSource}
+                  />
                   {selectedEdge.stale && (
                     <p className={styles.notice}>原文已更新，请重新核对。</p>
                   )}
@@ -541,6 +730,14 @@ export function ResearchGraph({
                   </div>
                   <h2>{selectedNode.label}</h2>
                   {selectedNode.definition && <p>{selectedNode.definition}</p>}
+                  {selectedNode.kind === "concept" && (
+                    <ConceptMergeControl
+                      node={selectedNode}
+                      graph={graph}
+                      onRefresh={onRefresh}
+                      notify={notify}
+                    />
+                  )}
                   <div className={styles.detailActions}>
                     {(selectedNode.paperId || selectedNode.noteId) && (
                       <button

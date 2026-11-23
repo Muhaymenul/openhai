@@ -64,4 +64,37 @@ export const paperflowResearchProvider = {
   configure(params: Record<string, unknown>) {
     return paperflowRpc<ResearchProviderHealth>("research.configure", params);
   },
+  metadata(params: { text: string }) {
+    return paperflowRpc<{ title: string; authors: string[]; year: string }>(
+      "research.metadata",
+      params,
+      { timeoutMs: 60_000 },
+    );
+  },
+  discoveryPlan(params: { topic: "all" | "ai" | "equity" | "curriculum" }) {
+    return paperflowRpc<{ keywords: string[] }>(
+      "research.discovery_plan",
+      params,
+      { timeoutMs: 35_000 },
+    );
+  },
+  discoverySummary(params: {
+    title: string;
+    abstract: string;
+    journal: string;
+    published_at: string;
+  }) {
+    return paperflowRpc<{ translated_title: string; summary: string }>(
+      "research.discovery_summary",
+      params,
+      { timeoutMs: 50_000 },
+    );
+  },
+  purge(params: { document_id: string }) {
+    return paperflowRpc<{
+      ok: boolean;
+      run_ids: string[];
+      session_ids: string[];
+    }>("research.purge", params);
+  },
 };

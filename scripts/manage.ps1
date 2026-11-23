@@ -1,22 +1,27 @@
-param([ValidateSet('start','stop','status','build','backup','restore')][string]$Action='start',[string]$ArchivePath='',[switch]$NoBrowser)
+﻿param([ValidateSet('start','stop','status','build','backup','restore')][string]$Action='start',[string]$ArchivePath='',[switch]$NoBrowser)
 $ErrorActionPreference='Stop'
 $projectRoot=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 Set-Location -LiteralPath $projectRoot
-if ($Action -in @('start','build')) {
-  & (Join-Path $PSScriptRoot 'setup.ps1')
+& (Join-Path $PSScriptRoot 'setup.ps1')
+$portableProject=Test-Path -LiteralPath (Join-Path $projectRoot '.portable-project.json')
+. (Join-Path $PSScriptRoot 'container-ownership.ps1')
+function Invoke-PortableDatabase([string]$Operation) {
+  if ($portableProject) { & (Join-Path $PSScriptRoot 'portable-postgres.ps1') -Action $Operation -ProjectRoot $projectRoot }
 }
 $dockerCommand=Get-Command docker -ErrorAction SilentlyContinue
 if ($dockerCommand) { $docker=$dockerCommand.Source } else {
-  $dockerCandidates=@(
-    (Join-Path $env:LOCALAPPDATA 'Programs\DockerDesktop\resources\bin\docker.exe'),
-    (Join-Path $env:ProgramFiles 'Docker\Docker\resources\bin\docker.exe')
-  )
-  $docker=@($dockerCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1)[0]
-  if (!$docker) { throw 'Docker with Compose v2 is required. Install Docker Desktop, then retry.' }
+  $docker=Join-Path $env:LOCALAPPDATA 'Programs\DockerDesktop\resources\bin\docker.exe'
+  if (!(Test-Path -LiteralPath $docker)) { throw 'Docker Desktop is required. Install its free personal edition first.' }
 }
 function Invoke-Compose([string[]]$Arguments) {
+  if ($Arguments[0] -eq 'stop') { Stop-ProjectContainers -Docker $docker -ProjectRoot $projectRoot; return }
   & $docker compose @Arguments
   if ($LASTEXITCODE -ne 0) { throw 'The local Docker operation failed. Your data has been preserved.' }
+}
+function Invoke-Database([string]$Operation,[string]$DatabaseArchive='') {
+  $parameters=@{Action=$Operation;ProjectRoot=$projectRoot}
+  if ($DatabaseArchive) { $parameters.ArchivePath=$DatabaseArchive }
+  & (Join-Path $PSScriptRoot 'postgres.ps1') @parameters
 }
 function Test-DockerCommand([string[]]$Arguments) {
   # Windows PowerShell 5 treats native stderr as a terminating error under Stop.
@@ -32,12 +37,8 @@ function Ensure-LocalDocker([bool]$AllowStart=$true) {
   $dockerReady=Test-DockerCommand -Arguments @('info')
   if (!$dockerReady -and !$AllowStart) { return $false }
   if (!$dockerReady) {
-    $desktopCandidates=@(
-      (Join-Path $env:LOCALAPPDATA 'Programs\DockerDesktop\Docker Desktop.exe'),
-      (Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe')
-    )
-    $desktop=@($desktopCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1)[0]
-    if ($desktop) { Start-Process -FilePath $desktop -WindowStyle Hidden }
+    $desktop=Join-Path $env:LOCALAPPDATA 'Programs\DockerDesktop\Docker Desktop.exe'
+    if (Test-Path -LiteralPath $desktop) { Start-Process -FilePath $desktop -WindowStyle Hidden }
     for ($attempt=0; $attempt -lt 45; $attempt++) {
       Start-Sleep -Seconds 1
       $dockerReady=Test-DockerCommand -Arguments @('info')
@@ -45,13 +46,7 @@ function Ensure-LocalDocker([bool]$AllowStart=$true) {
     }
   }
   if (!$dockerReady) { throw 'Docker is not ready. Open Docker Desktop and check its WSL2 engine, then retry.' }
-  if ($env:DOCKER_CONTEXT) {
-    $endpoint=(& $docker context inspect $env:DOCKER_CONTEXT --format '{{.Endpoints.docker.Host}}' | Out-String).Trim()
-  } elseif ($env:DOCKER_HOST) {
-    $endpoint=$env:DOCKER_HOST
-  } else {
-    $endpoint=(& $docker context inspect --format '{{.Endpoints.docker.Host}}' | Out-String).Trim()
-  }
+  $endpoint=(& $docker context inspect --format '{{.Endpoints.docker.Host}}' | Out-String).Trim()
   if (!$endpoint.StartsWith('npipe:') -and !$endpoint.StartsWith('unix:')) { throw 'Only a local Docker engine is allowed; remote/cloud Docker contexts are disabled.' }
   return $true
 }
@@ -62,40 +57,55 @@ function Assert-ProjectPath([string]$Value) {
 }
 $dockerReady=Ensure-LocalDocker -AllowStart ($Action -ne 'stop')
 if ($Action -eq 'stop' -and !$dockerReady) {
+  Invoke-PortableDatabase 'Stop'
   Write-Host 'Already stopped. Docker is offline. All documents, notes and graph records are preserved.'
   exit 0
 }
-$configurationText=(& $docker compose config --format json | Out-String)
-if ($LASTEXITCODE -ne 0) { throw 'Unable to read the Compose settings. Check .env and docker-compose.yml.' }
-$composeConfiguration=$configurationText | ConvertFrom-Json
-$webPort=[int]$composeConfiguration.services.web.ports[0].published
-if ($webPort -lt 1 -or $webPort -gt 65535) { throw 'RESEARCH_WEB_PORT must be a port number between 1 and 65535.' }
-$baseUrl='http://127.0.0.1:'+$webPort
-$workspaceUrl=$baseUrl+'/workspace'
-$serviceImages=@($composeConfiguration.services.web.image,$composeConfiguration.services.paperflow.image)
+if ($Action -in @('start','build','backup','restore')) { Assert-ProjectContainers -Docker $docker -ProjectRoot $projectRoot }
 switch ($Action) {
   'start' {
-    $imagesReady=Test-DockerCommand -Arguments (@('image','inspect')+$serviceImages)
-    if (!$imagesReady) { Invoke-Compose -Arguments @('build','--builder','default') }
-    Invoke-Compose -Arguments @('up','-d','--no-build')
+    foreach ($directory in @('data','runtime','private','backups')) { New-Item -ItemType Directory -Path (Join-Path $projectRoot $directory) -Force | Out-Null }
+    if (!(Test-Path -LiteralPath (Join-Path $projectRoot 'private\model.env'))) {
+      Copy-Item -LiteralPath (Join-Path $projectRoot 'private.example.env') -Destination (Join-Path $projectRoot 'private\model.env')
+    }
+    Invoke-PortableDatabase 'Start'
+    Invoke-Database 'check'
+    $imagesReady=$true
+    $images=@(& $docker compose config --images)
+    if($LASTEXITCODE -ne 0 -or !$images.Count) { throw 'Unable to read application image names.' }
+    foreach($image in $images) { if(!(Test-DockerCommand -Arguments @('image','inspect',$image))) { $imagesReady=$false } }
+    $offlineImages=Join-Path $projectRoot 'tools\docker-images\jiaoyan-images.tar'
+    if (!$imagesReady -and (Test-Path -LiteralPath $offlineImages)) {
+      & $docker image load -i $offlineImages
+      if ($LASTEXITCODE -ne 0) { throw 'The offline application images could not be loaded.' }
+      $imagesReady=$true
+    $images=@(& $docker compose config --images)
+    if($LASTEXITCODE -ne 0 -or !$images.Count) { throw 'Unable to read application image names.' }
+    foreach($image in $images) { if(!(Test-DockerCommand -Arguments @('image','inspect',$image))) { $imagesReady=$false } }
+    }
+    if ($imagesReady) { Invoke-Compose -Arguments @('up','-d','--no-build') } else { Invoke-Compose -Arguments @('up','-d','--build') }
     $ready=$false
     for ($attempt=0; $attempt -lt 60; $attempt++) {
-      try { $response=Invoke-WebRequest -Uri ($baseUrl+'/api/research') -UseBasicParsing -TimeoutSec 3; if ($response.StatusCode -eq 200) { $ready=$true; break } } catch { Start-Sleep -Seconds 1 }
+      try { $response=Invoke-WebRequest -Uri 'http://127.0.0.1:3000/api/research' -UseBasicParsing -TimeoutSec 3; if ($response.StatusCode -eq 200) { $ready=$true; break } } catch { Start-Sleep -Seconds 1 }
     }
     if (!$ready) { Invoke-Compose -Arguments @('logs','--tail','30','web'); throw 'The workspace did not become ready. Check the local logs above.' }
-    Write-Host ('Local workspace ready: '+$workspaceUrl)
-    if (!$NoBrowser) { Start-Process $workspaceUrl }
+    Write-Host 'Local workspace ready: http://127.0.0.1:3000/workspace'
+    if (!$NoBrowser) { Start-Process 'http://127.0.0.1:3000/workspace' }
   }
-  'stop' { Invoke-Compose -Arguments @('stop'); Write-Host 'Stopped. All documents, notes and graph records are preserved.' }
-  'status' { Invoke-Compose -Arguments @('ps'); try { (Invoke-RestMethod -Uri ($baseUrl+'/api/research/health') -TimeoutSec 5) | ConvertTo-Json -Depth 4 } catch { Write-Host 'The web workspace is currently offline.' } }
-  'build' { Invoke-Compose -Arguments @('build','--builder','default'); Invoke-Compose -Arguments @('up','-d','--no-build') }
+  'stop' { Invoke-Compose -Arguments @('stop'); Invoke-PortableDatabase 'Stop'; Write-Host 'Stopped. All documents, notes and graph records are preserved.' }
+  'status' { Invoke-PortableDatabase 'Check'; Invoke-Database 'status'; Invoke-Compose -Arguments @('ps'); try { (Invoke-RestMethod -Uri 'http://127.0.0.1:3000/api/research/health' -TimeoutSec 5) | ConvertTo-Json -Depth 4 } catch { Write-Host 'The web workspace is currently offline.' } }
+  'build' { Invoke-PortableDatabase 'Start'; Invoke-Database 'check'; Invoke-Compose -Arguments @('build'); Invoke-Compose -Arguments @('up','-d','--no-build') }
   'backup' {
+    Invoke-PortableDatabase 'Start'
     $stamp=Get-Date -Format 'yyyyMMdd-HHmmss'
     $stage=Assert-ProjectPath (Join-Path $projectRoot ('tmp\backup-'+$stamp))
     $backup=Assert-ProjectPath (Join-Path $projectRoot ('backups\research-'+$stamp+'.zip'))
     New-Item -ItemType Directory -Path $stage,(Split-Path $backup) -Force | Out-Null
+    Invoke-Database 'check'
+    $backupCreated=$false
     Invoke-Compose -Arguments @('stop')
     try {
+      Invoke-Database 'backup' (Join-Path $stage 'postgresql.dump')
       foreach ($directory in @('data','runtime')) {
         $source=Join-Path $projectRoot $directory
         if (Test-Path -LiteralPath $source) {
@@ -108,17 +118,16 @@ switch ($Action) {
       })
       [IO.File]::WriteAllText((Join-Path $stage 'backup-manifest.json'),([pscustomobject]@{schema=1;createdAt=[DateTime]::UtcNow.ToString('o');files=$manifestFiles}|ConvertTo-Json -Depth 5),[Text.UTF8Encoding]::new($false))
       Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $backup -CompressionLevel Optimal
+      $backupCreated=$true
       Write-Host ('Backup created: '+$backup)
       Write-Host 'Model secrets are excluded. Keep private/model.env separately if needed.'
     } finally {
-      try {
-        if (Test-Path -LiteralPath $stage) {
-          Remove-Item -LiteralPath (Assert-ProjectPath $stage) -Recurse -Force
-        }
-      } finally { Invoke-Compose -Arguments @('up','-d','--no-build') }
+      Invoke-Compose -Arguments @('up','-d','--no-build')
+      if ($backupCreated -and (Test-Path -LiteralPath $stage)) { Remove-Item -LiteralPath (Assert-ProjectPath $stage) -Recurse -Force }
     }
   }
   'restore' {
+    Invoke-PortableDatabase 'Start'
     if (!$ArchivePath) { $ArchivePath=Read-Host 'Enter the full path to a backup ZIP created by the backup script' }
     $archive=(Resolve-Path -LiteralPath $ArchivePath).Path
     $stamp=Get-Date -Format 'yyyyMMdd-HHmmss'
@@ -136,7 +145,10 @@ switch ($Action) {
     if (!(Test-Path -LiteralPath (Join-Path $stage 'data\research\workspace.json')) -or !(Test-Path -LiteralPath (Join-Path $stage 'runtime\research\state.json')) -or !(Test-Path -LiteralPath (Join-Path $stage 'backup-manifest.json'))) { throw 'This is not a full workspace backup. Web-exported results ZIPs are not full service backups.' }
     $manifest=Get-Content -LiteralPath (Join-Path $stage 'backup-manifest.json') -Encoding UTF8 -Raw | ConvertFrom-Json
     if ($manifest.schema -ne 1 -or !$manifest.files) { throw 'Invalid backup manifest.' }
+    $databaseArchive=Join-Path $stage 'postgresql.dump'
+    $hasDatabaseArchive=Test-Path -LiteralPath $databaseArchive -PathType Leaf
     $manifestPaths=@($manifest.files | ForEach-Object { $_.path.Replace('/','\') })
+    if ($hasDatabaseArchive -and $manifestPaths -notcontains 'postgresql.dump') { throw 'The backup manifest does not cover the PostgreSQL dump.' }
     if ($manifestPaths -notcontains 'data\research\workspace.json' -or $manifestPaths -notcontains 'runtime\research\state.json') { throw 'The backup manifest does not cover the complete workspace state.' }
     $workspace=Get-Content -LiteralPath (Join-Path $stage 'data\research\workspace.json') -Encoding UTF8 -Raw | ConvertFrom-Json
     $runtime=Get-Content -LiteralPath (Join-Path $stage 'runtime\research\state.json') -Encoding UTF8 -Raw | ConvertFrom-Json
@@ -148,11 +160,15 @@ switch ($Action) {
     }
     $previous=Assert-ProjectPath (Join-Path $projectRoot ('backups\before-restore-'+$stamp))
     New-Item -ItemType Directory -Path $previous -Force | Out-Null
+    Invoke-Database 'check'
     Invoke-Compose -Arguments @('stop')
     $moved=[Collections.Generic.List[string]]::new()
     $installed=[Collections.Generic.List[string]]::new()
     $canRestart=$true
+    $databaseChanged=$false
+    $restoreCompleted=$false
     try {
+      Invoke-Database 'backup' (Join-Path $previous 'postgresql.dump')
       foreach ($directory in @('data','runtime')) {
         $live=Assert-ProjectPath (Join-Path $projectRoot $directory)
         $incoming=Assert-ProjectPath (Join-Path $stage $directory)
@@ -161,10 +177,18 @@ switch ($Action) {
         Move-Item -LiteralPath $incoming -Destination $live
         $installed.Add($directory)
       }
+      if ($hasDatabaseArchive) {
+        Invoke-Database 'restore' $databaseArchive
+      } else {
+        Invoke-Database 'ResetLegacy'
+      }
+      $databaseChanged=$true
       Write-Host ('Restored. The previous directories are preserved at '+$previous)
+      $restoreCompleted=$true
     } catch {
       $failure=$_
       try {
+        if ($databaseChanged) { Invoke-Database 'restore' (Join-Path $previous 'postgresql.dump') }
         foreach ($directory in @('runtime','data')) {
           $live=Assert-ProjectPath (Join-Path $projectRoot $directory)
           $old=Assert-ProjectPath (Join-Path $previous $directory)
@@ -176,9 +200,9 @@ switch ($Action) {
         Write-Host ('Rollback requires attention. Services remain stopped. Original directories: '+$previous)
       }
       throw $failure
-    } finally { if ($canRestart) { Invoke-Compose -Arguments @('up','-d','--no-build') } }
-    if (Test-Path -LiteralPath $stage) {
-      Remove-Item -LiteralPath (Assert-ProjectPath $stage) -Recurse -Force
+    } finally {
+      if ($canRestart) { Invoke-Compose -Arguments @('up','-d','--no-build') }
+      if ($restoreCompleted -and (Test-Path -LiteralPath $stage)) { Remove-Item -LiteralPath (Assert-ProjectPath $stage) -Recurse -Force }
     }
   }
 }

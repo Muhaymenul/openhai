@@ -91,7 +91,7 @@ export function projectResearchComments(
 export async function readResearchComments(
   paperId: string,
 ): Promise<{ etag: string; comments: PdfCommentProjection[] }> {
-  const state = readWorkspace();
+  const state = await readWorkspace();
   const paper = paperById(paperId, state);
   const current = await readVersionedPdf(
     paper.library.topic,

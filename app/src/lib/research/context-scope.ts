@@ -106,6 +106,7 @@ export function buildResearchContext(input: StartResearchRunInput) {
           }
         : input.selection,
     answer_style: effectiveAnswerStyle(input),
+    ...(input.context.memory ? { research_memory: input.context.memory } : {}),
     provided_pages: selectedPages.map((page) => page.page),
     ...(input.learning
       ? {
@@ -193,6 +194,13 @@ export function researchContextScope(input: StartResearchRunInput): string {
   return JSON.stringify({
     policy: "explicit-source-scope-v6",
     answerStyle: effectiveAnswerStyle(input),
+    ...(input.context.memory
+      ? {
+          memory: createHash("sha256")
+            .update(JSON.stringify(input.context.memory))
+            .digest("hex"),
+        }
+      : {}),
     ...(input.learning && effectiveAnswerStyle(input) !== "discussion"
       ? {
           learning: input.learning,

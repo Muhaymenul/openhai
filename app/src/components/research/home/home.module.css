@@ -270,3 +270,55 @@
     transform: none;
   }
 }
+
+.home .discoveryEntry {
+  flex: 0 0 53px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+  padding: 10px var(--home-gutter);
+  color: #2d4937;
+  background: #f0f3ec;
+  text-align: left;
+}
+.home .discoveryEntry:hover {
+  background: #e7eddf;
+}
+.discoveryLabel {
+  font-size: 18px;
+  white-space: nowrap;
+}
+.discoveryHint {
+  color: #60705f;
+  font-size: 13px;
+}
+.discoveryAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  white-space: nowrap;
+  font-size: 14px;
+}
+@media (max-width: 600px) {
+  .home .discoveryEntry {
+    flex-basis: 51px;
+    gap: 12px;
+  }
+  .discoveryLabel {
+    font-size: 16px;
+  }
+  .discoveryHint {
+    display: none;
+  }
+  .discoveryAction {
+    font-size: 13px;
+    gap: 8px;
+  }
+}
+
+/* Let the gallery share short screens with the discovery entry and navigation. */
+.hero [data-home-gallery] {
+  min-height: 0;
+}

@@ -8,10 +8,16 @@ import type {
 import { ArrowRight, Plus, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { FloatingGallery } from "./FloatingGallery";
 import { HomeSearch } from "./HomeSearch";
 import { recentReadingPaper } from "./recent-paper";
 import styles from "./home.module.css";
+
+const DiscoveryJournal = dynamic(
+  () => import("./DiscoveryJournal").then((module) => module.DiscoveryJournal),
+  { ssr: false },
+);
 
 const destinations = [
   { id: "library", label: "文献库" },
@@ -36,6 +42,7 @@ export function ResearchHome({
 }) {
   const recent = recentReadingPaper(papers);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [discoveryOpen, setDiscoveryOpen] = useState(false);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (
@@ -77,7 +84,7 @@ export function ResearchHome({
           </div>
         </header>
         <main className={styles.hero} aria-labelledby="research-home-title">
-          <FloatingGallery suspended={searchOpen} />
+          <FloatingGallery suspended={searchOpen || discoveryOpen} />
           <div className={styles.content}>
             <h1 id="research-home-title" className={styles.title}>
               <span>让阅读，</span>
@@ -97,6 +104,20 @@ export function ResearchHome({
             ) : null}
           </div>
         </main>
+        <button
+          type="button"
+          className={styles.discoveryEntry}
+          onClick={() => setDiscoveryOpen(true)}
+          aria-haspopup="dialog"
+          aria-expanded={discoveryOpen}
+        >
+          <span className={styles.discoveryLabel}>教育研究速递</span>
+          <span className={styles.discoveryHint}>期刊新文献 · 摘要导读</span>
+          <span className={styles.discoveryAction}>
+            浏览新文献
+            <ArrowRight size={17} strokeWidth={1.5} aria-hidden="true" />
+          </span>
+        </button>
         <nav className={styles.destinations} aria-label="研究工作区">
           {destinations.map((destination) => (
             <button
@@ -114,6 +135,12 @@ export function ResearchHome({
           ))}
         </nav>
       </div>
+      {discoveryOpen ? (
+        <DiscoveryJournal
+          onClose={() => setDiscoveryOpen(false)}
+          onUpload={onUpload}
+        />
+      ) : null}
       {searchOpen ? (
         <HomeSearch
           papers={papers}

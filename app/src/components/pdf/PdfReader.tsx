@@ -24,6 +24,11 @@ import { resolvePdfDocumentTitle } from "@/lib/pdf/title";
 import { originalPdfUrl } from "@/lib/pdf/reader/source-link";
 import type { PdfEditGate } from "@/lib/pdf/reader/edit-gate";
 import { usePdfVersionPoll } from "./usePdfVersionPoll";
+import { normalizeEtag } from "@/lib/pdf/etag";
+import {
+  capturePdfView,
+  PdfVersionRefresh,
+} from "@/lib/pdf/view/document-refresh";
 import "pdfjs-dist/web/pdf_viewer.css";
 import styles from "./PdfReader.module.css";
 import { ReferencePreview, type Preview } from "./ReferencePreview";
@@ -101,6 +106,10 @@ interface PdfReaderProps {
    * passes this; viewer/share/canvas readers stay silent.
    */
   bibliographyEndpoint?: string;
+  /** Current host PDF revision after a source-linked annotation write. */
+  documentVersion?: string;
+  /** Text revision for reference-index reuse across annotation-only saves. */
+  contentRevision?: string;
 }
 
 export function PdfReader({
@@ -121,6 +130,8 @@ export function PdfReader({
   positionKey,
   positionEndpoint,
   bibliographyEndpoint,
+  documentVersion,
+  contentRevision,
 }: PdfReaderProps) {
   const appearance = useDocumentAppearance();
   const readerRoot = useRef<HTMLDivElement>(null);
@@ -311,6 +322,56 @@ export function PdfReader({
       setDocumentGeneration((generation) => generation + 1);
     },
   });
+
+  const versionSource = useRef(src);
+  const versionRefresh = useRef(
+    new PdfVersionRefresh(normalizeEtag(documentVersion ?? null)),
+  );
+  useEffect(() => {
+    const next = normalizeEtag(documentVersion ?? null);
+    if (versionSource.current !== src) {
+      versionSource.current = src;
+      versionRefresh.current = new PdfVersionRefresh(next);
+    }
+    versionRefresh.current.observe(next);
+    const viewer = pdfViewerRef.current;
+    const container = containerRef.current;
+    if (
+      !pdfDocument ||
+      !viewer ||
+      !container ||
+      viewer.pdfDocument !== pdfDocument ||
+      (editable && !editorReady)
+    )
+      return;
+    if (
+      !versionRefresh.current.take(
+        etagRef.current,
+        dirty || saving || commentDraftActive,
+      )
+    )
+      return;
+    restoreViewRef.current = capturePdfView(viewer, container);
+    // Refresh the authoritative bytes while keeping the reader's controls,
+    // comment state and exact reading position. Native saves keep if-match.
+    setEditMode("select");
+    setDocumentGeneration((generation) => generation + 1);
+  }, [
+    documentVersion,
+    src,
+    pdfDocument,
+    dirty,
+    saving,
+    commentDraftActive,
+    editable,
+    editorReady,
+    containerRef,
+    etagRef,
+    pdfViewerRef,
+    restoreViewRef,
+    setEditMode,
+    setDocumentGeneration,
+  ]);
 
   function chooseEditMode(nextMode: EditMode): void {
     setCommentEnabled(false);
@@ -512,6 +573,7 @@ export function PdfReader({
     pdfDocument,
     eventBus: viewerBus,
     enabled: !editable || editMode === "select",
+    contentKey: contentRevision ? `${src}:${contentRevision}` : undefined,
     onCitation: (target) =>
       showReferencePreview(target.destination, target.entryText, target),
     onBibliography: (bibliography) => {

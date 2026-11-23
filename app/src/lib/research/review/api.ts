@@ -33,7 +33,7 @@ export async function handleReviewRequest(
   if (id) idSchema.parse(id);
   const url = new URL(request.url);
   if (request.method === "GET") {
-    if (id && !action) return json({ deck: getReviewDeck(id) });
+    if (id && !action) return json({ deck: await getReviewDeck(id) });
     if (!id) {
       const filter = z
         .object({ paperId: idSchema.optional(), noteId: idSchema.optional() })
@@ -41,7 +41,9 @@ export async function handleReviewRequest(
           paperId: url.searchParams.get("paperId") || undefined,
           noteId: url.searchParams.get("noteId") || undefined,
         });
-      return json({ decks: listReviewDecks(filter.paperId, filter.noteId) });
+      return json({
+        decks: await listReviewDecks(filter.paperId, filter.noteId),
+      });
     }
   }
   if (Number(request.headers.get("content-length") || 0) > 2 * 1024 * 1024)
@@ -54,7 +56,7 @@ export async function handleReviewRequest(
   }
   if (request.method === "POST" && !id) {
     const deck = await createReviewDeck(reviewCreateSchema.parse(input));
-    return json({ deck: getReviewDeck(deck.id) }, 201);
+    return json({ deck: await getReviewDeck(deck.id) }, 201);
   }
   if (request.method === "PATCH" && id && action) {
     if (action === "attempt")
@@ -66,7 +68,7 @@ export async function handleReviewRequest(
     else if (action === "question")
       await updateReviewQuestion(id, reviewQuestionSchema.parse(input));
     else throw new ResearchError("复习操作不存在", 404);
-    return json({ deck: getReviewDeck(id) });
+    return json({ deck: await getReviewDeck(id) });
   }
   throw new ResearchError("复习操作不存在或不支持此方法", 404);
 }

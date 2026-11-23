@@ -1,0 +1,278 @@
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  color: #292d32;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.heading h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+}
+.page button,
+.page input,
+.page textarea,
+.page select,
+.dialog button,
+.dialog textarea,
+.dialog select {
+  font: inherit;
+}
+.button,
+.primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid #d6dadd;
+  border-radius: 5px;
+  background: #fff;
+  color: #343b41;
+  cursor: pointer;
+}
+.page button.primary,
+.dialog button.primary {
+  color: #fff;
+  background: #303b36;
+  border-color: #303b36;
+}
+.button:disabled,
+.primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.page button.button,
+.dialog button.button {
+  color: #343b41;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  min-height: 500px;
+  border: 1px solid #dfe3df;
+  background: #fff;
+}
+.projectList {
+  padding: 12px;
+  border-right: 1px solid #dfe3df;
+}
+.projectList button {
+  width: 100%;
+  border: 0;
+  background: none;
+  padding: 12px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 4px;
+  display: grid;
+  gap: 3px;
+  color: #49514d;
+}
+.projectList button[aria-current="true"] {
+  background: #eef2ed;
+  color: #273c30;
+}
+.projectList small,
+.muted {
+  color: #626e65;
+  font-size: 12px;
+}
+.main {
+  min-width: 0;
+  padding: 26px;
+}
+.form {
+  display: grid;
+  gap: 14px;
+}
+.form label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: #626b65;
+}
+.form input,
+.form textarea,
+.form select,
+.dialog textarea,
+.dialog select {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid #d8ded8;
+  border-radius: 4px;
+  padding: 9px 11px;
+  color: #2d352f;
+  background: #fafbf9;
+  min-width: 0;
+}
+.form textarea {
+  min-height: 82px;
+  resize: vertical;
+  line-height: 1.65;
+}
+.form h2,
+.form h3 {
+  margin: 4px 0;
+  font-size: 19px;
+  color: #27342c;
+  font-weight: 600;
+}
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.section {
+  border-top: 1px solid #e3e7e2;
+  margin-top: 22px;
+  padding-top: 22px;
+}
+.papers {
+  max-height: 180px;
+  overflow: auto;
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+  background: #f6f8f4;
+}
+.papers label {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+  color: #3a453e;
+}
+.papers input {
+  width: auto;
+  margin-top: 5px;
+}
+.memory {
+  padding: 15px 0;
+  border-bottom: 1px solid #e7eae5;
+}
+.memory header {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  color: #626e65;
+  font-size: 12px;
+}
+.memory p {
+  white-space: pre-wrap;
+  margin: 9px 0;
+  overflow-wrap: anywhere;
+}
+.memory button {
+  background: none;
+  border: 0;
+  color: #4e6756;
+  padding: 3px;
+  cursor: pointer;
+}
+.memory header button:first-of-type {
+  margin-left: auto;
+}
+.error {
+  color: #a13f33;
+  font-size: 13px;
+}
+.empty {
+  padding: 24px 0;
+  color: #626e65;
+}
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  background: #16201866;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+.dialog {
+  width: min(520px, 100%);
+  max-height: 85dvh;
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 25px;
+  border: 1px solid #d9ded7;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 12px 45px #0003;
+  color: #2d352f;
+  font-size: 14px;
+}
+.dialog h2 {
+  margin: 0 0 18px;
+  font-size: 21px;
+}
+.dialog label {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 13px;
+  color: #616b64;
+}
+.dialog textarea {
+  resize: vertical;
+  line-height: 1.65;
+}
+.remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #d6ddd5;
+  color: #3f5947;
+  background: #f6f8f4;
+  border-radius: 5px;
+  padding: 6px 9px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.remember:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.recall {
+  margin: 10px 0;
+  color: #647167;
+  font-size: 12px;
+}
+.recall summary {
+  cursor: pointer;
+}
+.recall ul {
+  padding-left: 20px;
+}
+.page :is(button, input, textarea, select):focus-visible,
+.dialog :is(button, textarea, select):focus-visible {
+  outline: 2px solid #4b715b;
+  outline-offset: 3px;
+}
+@media (max-width: 760px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .projectList {
+    border-right: 0;
+    border-bottom: 1px solid #dfe3df;
+    display: flex;
+    overflow: auto;
+  }
+  .projectList button {
+    min-width: 150px;
+  }
+  .main {
+    padding: 18px;
+  }
+}

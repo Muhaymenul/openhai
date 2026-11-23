@@ -15,3 +15,9 @@ if [ ! -e private/model.env ]; then
 fi
 printf '%s\n' 'Setup ready. Existing settings were preserved.'
 printf '%s\n' 'For AI features, edit private/model.env with your own endpoint, model ID and API key.'
+
+if [ ! -e private/postgres.env ]; then
+  cp private.postgres.example.env private/postgres.env
+  printf '%s\n' 'Created private/postgres.env'
+fi
+printf '%s\n' 'Configure your own PostgreSQL connection in private/postgres.env before starting.'

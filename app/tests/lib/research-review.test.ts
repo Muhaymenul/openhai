@@ -153,7 +153,7 @@ describe("persistent, source-linked review workflow", () => {
       input,
     );
     expect(retry.value.deck.id).toBe(deck.id);
-    expect(readWorkspace().reviewDecks).toHaveLength(1);
+    expect((await readWorkspace()).reviewDecks).toHaveLength(1);
     const collision = await request(["review"], "POST", {
       ...input,
       title: "Different payload",
@@ -182,7 +182,7 @@ describe("persistent, source-linked review workflow", () => {
     );
     expect(draft.status).toBe(200);
     deck = draft.value.deck;
-    expect(getReviewDeck(deck.id).questions[0].response).toBe(
+    expect((await getReviewDeck(deck.id)).questions[0].response).toBe(
       "My own explanation",
     );
     expect(deck.questions[0].rating).toBeUndefined();
@@ -224,7 +224,7 @@ describe("persistent, source-linked review workflow", () => {
       },
     );
     deck = next.value.deck;
-    expect(getReviewDeck(deck.id).session).toEqual({
+    expect((await getReviewDeck(deck.id)).session).toEqual({
       currentQuestionId: deck.questions[1].id,
       onlyMissed: true,
     });
@@ -254,7 +254,7 @@ describe("persistent, source-linked review workflow", () => {
     });
     expect(stale.status).toBe(409);
     deck = saved.value.deck;
-    expect(getReviewDeck(deck.id).questions[0].response).toBe("Fresh");
+    expect((await getReviewDeck(deck.id)).questions[0].response).toBe("Fresh");
     expect(
       (
         await request(["review", deck.id, "attempt"], "PATCH", {
@@ -325,15 +325,19 @@ describe("persistent, source-linked review workflow", () => {
         Date.parse(deck.questions[0].reviewedAt!),
     ).toBe(86400000);
     const removed = await trashResearchPaper(other.id, other.version);
-    expect(listReviewDecks()).toEqual([]);
+    expect(await listReviewDecks()).toEqual([]);
     expect((await request(["review", deck.id])).status).toBe(410);
-    expect(readWorkspace().reviewDecks![0].questions[0].rating).toBe("good");
+    expect((await readWorkspace()).reviewDecks![0].questions[0].rating).toBe(
+      "good",
+    );
     await restoreResearchPaper(other.id, removed.version);
-    expect(getReviewDeck(deck.id).questions[0].response).toBe("I can explain");
+    expect((await getReviewDeck(deck.id)).questions[0].response).toBe(
+      "I can explain",
+    );
     const mainRemoved = await trashResearchPaper(paper.id, paper.version);
-    expect(listReviewDecks()).toEqual([]);
+    expect(await listReviewDecks()).toEqual([]);
     await restoreResearchPaper(paper.id, mainRemoved.version);
-    expect(getReviewDeck(deck.id).questions[0].attemptCount).toBe(1);
+    expect((await getReviewDeck(deck.id)).questions[0].attemptCount).toBe(1);
   });
 
   it("links a note version, flags later edits, and permits user corrections without retaining mastery for changed answers", async () => {
@@ -371,7 +375,7 @@ describe("persistent, source-linked review workflow", () => {
     expect(deck.noteVersion).toBe(note.version);
     expect(deck.questions[0].sources[0].page).toBe(2);
     await updateNote(note.id, { title: "Changed note", version: note.version });
-    expect(getReviewDeck(deck.id).stale).toBe(true);
+    expect((await getReviewDeck(deck.id)).stale).toBe(true);
     expect(
       (
         await request(["review"], "POST", {
@@ -466,7 +470,7 @@ describe("persistent, source-linked review workflow", () => {
     });
     expect(result.status).toBe(409);
     expect(result.value.error).toContain("旧版论文");
-    expect(readWorkspace().reviewDecks ?? []).toHaveLength(0);
+    expect((await readWorkspace()).reviewDecks ?? []).toHaveLength(0);
   });
 
   it("rejects incomplete, old, absent or fabricated AI quiz content and impossible source pages", async () => {
@@ -599,7 +603,7 @@ describe("persistent, source-linked review workflow", () => {
       actionId: "source-note-late",
     });
     expect(late.status).toBe(409);
-    expect(readWorkspace().reviewDecks).toHaveLength(1);
+    expect((await readWorkspace()).reviewDecks).toHaveLength(1);
   });
 
   it("hides indirect note sources when a cross-paper source is trashed without losing review progress", async () => {
@@ -622,11 +626,11 @@ describe("persistent, source-linked review workflow", () => {
       ],
       actionId: "indirect-note",
     });
-    expect(listReviewDecks()).toHaveLength(1);
+    expect(await listReviewDecks()).toHaveLength(1);
     const removed = await trashResearchPaper(other.id, other.version);
-    expect(listReviewDecks()).toHaveLength(0);
+    expect(await listReviewDecks()).toHaveLength(0);
     expect((await request(["review", deck.id])).status).toBe(410);
     await restoreResearchPaper(other.id, removed.version);
-    expect(getReviewDeck(deck.id).questions[0].question).toBe("Q");
+    expect((await getReviewDeck(deck.id)).questions[0].question).toBe("Q");
   });
 });

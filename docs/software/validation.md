@@ -59,3 +59,20 @@ GitHub Actions 对 `main`、`develop` 和 Pull Request 执行发布检查、研�
 ## 后续验收
 
 首轮 3–5 人试用、其他电脑的 Docker 下载环境及真实模型连接在 [Issue #7](https://github.com/Muhaymenul/openhai/issues/7) 记录；整体交付由 [Issue #6](https://github.com/Muhaymenul/openhai/issues/6) 跟踪。
+
+## 2026-11-24 最新源码发布检查
+
+本轮从最新开发目录整理公开源码，保留仓库已有课程文档。发布内容使用用户自备的 PostgreSQL 与模型配置；个人论文、笔记、数据库、会话、浏览器资料、凭据和本机验收截图均排除。
+
+| 检查 | 本轮结果 |
+| --- | --- |
+| Web 静态检查 | ESLint、Prettier、TypeScript 通过 |
+| Web 单元/行为测试 | 167 个文件，1286 项通过；5 项按既有环境配置跳过 |
+| Web 生产构建 | `npm run build` 通过，独立运行产物及其内容检查通过 |
+| PostgreSQL 集成 | 全新隔离 PostgreSQL 18 数据库，3 个文件、15 项通过 |
+| Python 研究服务 | 58 项及 15 个子测试通过 |
+| 桌面端 | 14 项通过，包括退出协调与 Windows PowerShell 5 容器归属模拟检查 |
+| 发布和初始化 | 文件排除、凭据模式与本机凭据值对照、空白模板、重复初始化保留配置、PowerShell/sh 语法及 Compose 配置通过 |
+
+检查使用隔离环境和合成数据，没有调用真实模型。Web 检查复用与锁文件一致的既有依赖缓存；测试中调整了格式、未使用类型导入和中文按钮的过期断言。仓库 CI 增加 PostgreSQL 集成与 Windows 桌面检查。上方旧日期记录保留为对应版本的历史结果。
+随后按根目录 Compose 构建实际部署镜像并连接隔离空库，导入 3 份原创合成示例。Electron 实际验证首页、导入表单、PDF 画布和可选文字、批注工具、笔记、研究记忆、复习、图谱与 PDF/JSON 导出；检查前后资料数量一致。关闭桌面后，本项目容器全部停止，外部系统 PostgreSQL 保持运行，符合普通部署行为。

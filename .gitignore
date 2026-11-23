@@ -28,3 +28,12 @@ reports/
 *.db
 *.sqlite
 .DS_Store
+
+database/
+tools/
+.portable-project.json
+desktop/.tools/
+desktop/.cache/
+desktop/.local/
+desktop/dist/
+*.dump

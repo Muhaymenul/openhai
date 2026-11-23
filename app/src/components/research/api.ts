@@ -52,7 +52,7 @@ export async function researchApi<T>(
   if (
     typeof window !== "undefined" &&
     ["POST", "PATCH", "DELETE"].includes(init?.method ?? "GET") &&
-    /^\/papers(?:\/|$)/.test(path)
+    /^\/(?:papers|trash)(?:\/|$)/.test(path)
   ) {
     try {
       window.localStorage.setItem(WORKSPACE_CHANGE_KEY, crypto.randomUUID());

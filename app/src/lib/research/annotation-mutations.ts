@@ -75,9 +75,11 @@ export async function mutateAnnotation(
   input: z.infer<typeof annotationMutationSchema>,
   remove: boolean,
 ) {
-  const annotation = readWorkspace().annotations.find((a) => a.id === id);
+  const annotation = (await readWorkspace()).annotations.find(
+    (a) => a.id === id,
+  );
   if (!annotation) throw new ResearchError("批注不存在或已经删除", 404);
-  const paper = paperById(annotation.paperId);
+  const paper = await paperById(annotation.paperId);
   const current = await readVersionedPdf(
     paper.library.topic,
     paper.library.slug,
@@ -102,9 +104,10 @@ export async function mutateAnnotation(
     input.pdfEtag,
   );
   await synchronizeAnnotations(paper.id);
-  if (remove) return { deleted: true as const, paper: paperById(paper.id) };
+  if (remove)
+    return { deleted: true as const, paper: await paperById(paper.id) };
   return {
-    annotation: readWorkspace().annotations.find((a) => a.id === id)!,
-    paper: paperById(paper.id),
+    annotation: (await readWorkspace()).annotations.find((a) => a.id === id)!,
+    paper: await paperById(paper.id),
   };
 }

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { pickReferenceConcepts } from "@/lib/research/discussion/concepts";
 import { effectiveAnswerStyle } from "@/lib/research/discussion/context";
 import { boundedSourceDocuments } from "@/lib/research/discussion/source-pool";
+import { RESEARCH_REPLY_STYLE } from "@/lib/research/reply-style";
 import {
   buildResearchContext,
   canReuseResearchSession,
@@ -159,6 +160,22 @@ function previous(request: StartResearchRunInput): ResearchRun {
 }
 
 describe("free discussion with bounded evidence", () => {
+  it.each(["ask", "analyze", "card", "concept", "graph"] as const)(
+    "passes the requested direct writing style through the real %s provider boundary",
+    async (mode) => {
+      const request = { ...input(), mode };
+      const created = await startResearchRun(request);
+      const packet = boundary.start.mock.calls[0][0];
+      expect(packet.prompt).toContain(RESEARCH_REPLY_STYLE);
+      expect(String(packet.prompt).split(RESEARCH_REPLY_STYLE)).toHaveLength(2);
+      expect(packet.prompt).toContain("与当前论证无关");
+      expect(packet.prompt).toContain("准确保留真实不确定性和引文");
+      expect(packet.prompt).not.toContain("不代表已读取全文");
+      expect(created.answer).toBe(
+        "A source-grounded explanation and some background knowledge.",
+      );
+    },
+  );
   it("does not carry chosen discussion concepts into paper cards, analysis or graph requests", async () => {
     for (const mode of ["card", "analyze", "graph"] as const) {
       const request = {

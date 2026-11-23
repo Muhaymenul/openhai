@@ -35,6 +35,8 @@ import {
   NoteLeaveConfirm,
 } from "./learning/NoteDraftFeedback";
 import { useNoteEditor } from "./learning/use-note-editor";
+import { NoteMathTools } from "./learning/NoteMathTools";
+import { RememberButton } from "./memory/RememberButton";
 
 export function ResearchNotes({
   notes,
@@ -73,6 +75,7 @@ export function ResearchNotes({
   );
   const { id: activeId, title, body, paperId, kind, sources } = editor.model;
   const [preview, setPreview] = useState(false);
+  const bodyInput = useRef<HTMLTextAreaElement>(null);
   const saving = editor.busy;
   const [reviewing, setReviewing] = useState(false);
   const reviewLock = useRef(false);
@@ -287,6 +290,15 @@ export function ResearchNotes({
               </button>
             </div>
             <div className={styles.actionRow}>
+              {active && (
+                <RememberButton
+                  paperId={paperId}
+                  text={body}
+                  sources={sources}
+                  noteId={active.id}
+                  disabled={dirty || disabled || paperUnavailable}
+                />
+              )}
               <span className={styles.mutedSmall}>
                 <NoteDraftStatus editor={editor} />
               </span>
@@ -420,12 +432,21 @@ export function ResearchNotes({
                 />
               </div>
             )}
+            {!preview && (
+              <NoteMathTools
+                value={body}
+                textarea={bodyInput}
+                disabled={disabled}
+                onChange={(body) => editor.change({ body })}
+              />
+            )}
             {preview ? (
               <div className={styles.notePreview}>
                 <StudyMarkdown content={body || "还没有正文。"} />
               </div>
             ) : (
               <textarea
+                ref={bodyInput}
                 className={styles.noteBodyInput}
                 value={body}
                 onChange={(event) =>
@@ -434,12 +455,13 @@ export function ResearchNotes({
                 aria-label="Markdown 笔记正文"
                 maxLength={200000}
                 readOnly={disabled}
+                spellCheck={false}
                 placeholder={"## 重要发现\n\n## 原文依据\n\n## 我的思考"}
               />
             )}
           </div>
           <footer className={styles.editorFooter}>
-            <span>{body.length} 字符 · Markdown · Ctrl / ⌘ + S</span>
+            <span>{body.length} 字符 · Markdown / TeX · Ctrl / ⌘ + S</span>
             <span>
               {paper ? "关联：" + paper.title.slice(0, 34) : "尚未关联论文"}
             </span>

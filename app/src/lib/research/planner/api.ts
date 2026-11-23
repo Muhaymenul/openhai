@@ -34,9 +34,9 @@ export async function handlePlannerRequest(
       .parse(path);
     const [id] = path;
     if (request.method === "GET" && !id)
-      return json({ tasks: listPlannerTasks() });
+      return json({ tasks: await listPlannerTasks() });
     if (request.method === "GET" && id === "calendar")
-      return new Response(plannerCalendar(), {
+      return new Response(await plannerCalendar(), {
         headers: {
           "content-type": "text/calendar; charset=utf-8",
           "content-disposition": 'attachment; filename="research-tasks.ics"',

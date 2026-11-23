@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 export function paperflowRpc<T>(
   method: string,
   params: Record<string, unknown> = {},
+  options: { timeoutMs?: number } = {},
 ): Promise<T> {
   const host = process.env.PAPERFLOW_HOST || "127.0.0.1";
   const port = Number(process.env.PAPERFLOW_PORT || 17437);
@@ -20,7 +21,7 @@ export function paperflowRpc<T>(
       if (error) reject(error);
       else resolve(value as T);
     };
-    socket.setTimeout(20_000, () =>
+    socket.setTimeout(options.timeoutMs ?? 20_000, () =>
       finish(new Error("PaperFlow 连接超时，请检查本地分析服务。")),
     );
     socket.on("connect", () =>

@@ -6,7 +6,7 @@ import type {
   SourceRef,
 } from "@/lib/research/types";
 import { Check, Eye, FilePenLine } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Modal, SourceChips } from "../ResearchUi";
 import { StudyMarkdown } from "../study/StudyMarkdown";
 import styles from "../styles";
@@ -18,6 +18,7 @@ import {
   NoteLeaveConfirm,
 } from "./NoteDraftFeedback";
 import { useNoteEditor } from "./use-note-editor";
+import { NoteMathTools } from "./NoteMathTools";
 
 export interface NoteDraft {
   id?: string;
@@ -55,6 +56,7 @@ export function NoteEditor({
     origin: generatedNoteOrigin(draft, draft.origin),
   });
   const [preview, setPreview] = useState(false);
+  const bodyInput = useRef<HTMLTextAreaElement>(null);
   const [pendingLeave, setPendingLeave] = useState<(() => void) | null>(null);
   const { model, busy, unsaved } = editor;
   const disabled = busy || !editor.ready || editor.blocked;
@@ -141,12 +143,21 @@ export function NoteEditor({
             }}
           />
         )}
+        {!preview && (
+          <NoteMathTools
+            value={model.body}
+            textarea={bodyInput}
+            disabled={disabled}
+            onChange={(body) => editor.change({ body })}
+          />
+        )}
         {preview ? (
           <div className={learningStyles.notePreview}>
             <StudyMarkdown content={model.body || "暂无正文"} />
           </div>
         ) : (
           <textarea
+            ref={bodyInput}
             aria-label="阅读笔记正文"
             className={learningStyles.noteBody}
             rows={13}
@@ -154,6 +165,7 @@ export function NoteEditor({
             onChange={(event) => editor.change({ body: event.target.value })}
             maxLength={200000}
             disabled={disabled}
+            spellCheck={false}
           />
         )}
         {model.sources.length > 0 && (

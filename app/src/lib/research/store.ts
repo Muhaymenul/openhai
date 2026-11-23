@@ -18,6 +18,16 @@ import {
 } from "../library/index-db";
 import { educationSeeds } from "./seed";
 import { registerInitialPdfWrite } from "../library/pdf/file";
+import { matchesPdfQuote } from "./pdf-quote";
+import { postgresEnabled } from "./postgres/client";
+import {
+  readPostgresWorkspace,
+  mutatePostgresWorkspace,
+  ensurePostgresWorkspace,
+} from "./postgres/workspace";
+import { legacySnapshot } from "./postgres/legacy";
+import { searchPostgres } from "./postgres/search";
+import { hydrateDerivedPages } from "./postgres/text-cache";
 import type {
   KnowledgeEntry,
   ResearchAnnotation,
@@ -56,6 +66,12 @@ export interface WorkspaceState {
   pendingAnnotations: PendingAnnotation[];
   plannerTasks?: import("./planner/types").PlannerTask[];
   reviewDecks?: import("./review/types").ReviewDeck[];
+  researchProjects?: import("./memory/types").ResearchProject[];
+  researchMemories?: import("./memory/types").ResearchMemory[];
+  researchPreferences?: import("./memory/types").MemoryPreferences;
+  deletedResearchProjectIds?: string[];
+  paperComparisons?: import("./relations/types").PaperComparison[];
+  conceptMerges?: import("./relations/types").ConceptMerge[];
   settings: ResearchSettings;
 }
 export function getResearchDataDir(): string {
@@ -104,11 +120,15 @@ function stateFile() {
 let indexedRoot = "";
 let indexedSignature = "";
 /** Rebuildable Papernook FTS5 index; JSON/PDF files remain authoritative. No model calls. */
-export function ensureResearchIndex(force = false): boolean {
+export async function ensureResearchIndex(force = false): Promise<boolean> {
+  if (postgresEnabled()) {
+    await readWorkspace();
+    return true;
+  }
   const root = dataRoot();
   const file = path.join(root, "index.db");
   const signature = digest(
-    readWorkspace().papers.map((p) => [
+    (await readWorkspace()).papers.map((p) => [
       p.id,
       p.title,
       p.authors,
@@ -152,8 +172,8 @@ function initialState(): WorkspaceState {
     pendingAnnotations: [],
     settings: {
       productName: "教研阅记",
-      model: "未配置",
-      provider: "PaperFlow · 自备接口",
+      model: "ecnu-max",
+      provider: "PaperFlow · 华师大",
       theme: "light",
       defaultTopic: "教育研究",
       dataLocation: getResearchDataDir(),
@@ -161,7 +181,7 @@ function initialState(): WorkspaceState {
     },
   };
 }
-export function readWorkspace(): WorkspaceState {
+function readLegacyWorkspace(): WorkspaceState {
   const file = stateFile();
   if (!fs.existsSync(file)) {
     fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -197,6 +217,30 @@ export function readWorkspace(): WorkspaceState {
     throw new ResearchError("工作区数据格式不受支持，原数据已保留。", 500);
   return state;
 }
+function initializePostgres() {
+  return legacySnapshot(
+    readLegacyWorkspace(),
+    getResearchDataDir(),
+    paperPages,
+  );
+}
+export async function ensureResearchDatabase(): Promise<void> {
+  if (postgresEnabled()) await ensurePostgresWorkspace(initializePostgres);
+}
+export async function readWorkspace(): Promise<WorkspaceState> {
+  if (!postgresEnabled()) return readLegacyWorkspace();
+  try {
+    const state = await readPostgresWorkspace(initializePostgres);
+    await hydrateDerivedPages(state.papers, writePaperPages);
+    return state;
+  } catch (error) {
+    if (error instanceof ResearchError) throw error;
+    throw new ResearchError(
+      "PostgreSQL 连接或数据读取失败，请检查本机数据库服务。",
+      503,
+    );
+  }
+}
 export async function mutateWorkspace<T>(
   operation: (state: WorkspaceState) => T | Promise<T>,
 ): Promise<T> {
@@ -205,7 +249,14 @@ export async function mutateWorkspace<T>(
     getResearchDataDir(),
     30000,
     async () => {
-      const state = readWorkspace();
+      if (postgresEnabled())
+        return mutatePostgresWorkspace(
+          initializePostgres,
+          paperPages,
+          operation,
+          (state) => hydrateDerivedPages(state.papers, writePaperPages),
+        );
+      const state = await readWorkspace();
       const result = await operation(state);
       state.version++;
       atomicWrite(stateFile(), JSON.stringify(state, null, 2));
@@ -213,7 +264,13 @@ export async function mutateWorkspace<T>(
     },
   );
 }
-export function paperById(id: string, state = readWorkspace()): ResearchPaper {
+export function paperById(id: string, state: WorkspaceState): ResearchPaper;
+export function paperById(id: string): Promise<ResearchPaper>;
+export function paperById(
+  id: string,
+  state?: WorkspaceState,
+): ResearchPaper | Promise<ResearchPaper> {
+  if (!state) return readWorkspace().then((value) => paperById(id, value));
   safeId(id);
   const paper = state.papers.find((p) => p.id === id);
   if (!paper) throw new ResearchError("未找到论文", 404);
@@ -222,7 +279,12 @@ export function paperById(id: string, state = readWorkspace()): ResearchPaper {
   return paper;
 }
 /** A read projection only: never persist it in place of the full workspace. */
-export function activeWorkspace(state = readWorkspace()): WorkspaceState {
+export function activeWorkspace(state: WorkspaceState): WorkspaceState;
+export function activeWorkspace(): Promise<WorkspaceState>;
+export function activeWorkspace(
+  state?: WorkspaceState,
+): WorkspaceState | Promise<WorkspaceState> {
+  if (!state) return readWorkspace().then((value) => activeWorkspace(value));
   const ids = new Set(
     state.papers.filter((p) => !p.trashedAt).map((p) => p.id),
   );
@@ -314,7 +376,7 @@ export function writePaperPages(
 }
 /** Recover an import that finished its companion files but crashed before publishing the workspace. */
 export async function recoverResearchImports(): Promise<void> {
-  const state = readWorkspace();
+  const state = await readWorkspace();
   const known = new Set(state.papers.map((p) => p.id));
   const recovered: ResearchPaper[] = [];
   for (const native of listPapers()) {
@@ -368,6 +430,7 @@ export async function importPaper(input: {
   bytes: Uint8Array;
   filename: string;
   title?: string;
+  manualTitle?: boolean;
   topic?: string;
   tags?: string[];
   pages: ResearchPage[];
@@ -377,7 +440,7 @@ export async function importPaper(input: {
   const now = new Date().toISOString();
   const id = randomUUID();
   const originalHash = digest(input.bytes);
-  const existing = readWorkspace().papers.find(
+  const existing = (await readWorkspace()).papers.find(
     (p) =>
       p.originalHash === originalHash ||
       (!p.originalHash && p.pdfEtag === `"${originalHash}"`),
@@ -385,7 +448,7 @@ export async function importPaper(input: {
   if (existing) {
     if (existing.trashedAt)
       throw new ResearchError("这篇论文已在回收站中，请先恢复后再导入", 409);
-    ensureResearchIndex();
+    await ensureResearchIndex();
     return existing;
   }
   const paper: ResearchPaper = {
@@ -402,6 +465,7 @@ export async function importPaper(input: {
     textWarning: input.textWarning,
     pdfEtag: `"${originalHash}"`,
     originalHash,
+    metadataManualFields: input.manualTitle ? ["title"] : [],
     contentRevision: input.contentRevision,
     version: 1,
     lastReadPage: 1,
@@ -441,7 +505,7 @@ export async function importPaper(input: {
     state.papers.unshift(paper);
     return paper;
   });
-  ensureResearchIndex(true);
+  await ensureResearchIndex(true);
   return imported;
 }
 export function expectedVersion(current: number, supplied?: number): void {
@@ -452,6 +516,16 @@ export function expectedVersion(current: number, supplied?: number): void {
       "记录已被修改。请刷新后核对，系统未覆盖新内容。",
       409,
     );
+}
+export function persistPaperInfo(paper: ResearchPaper): void {
+  writeMeta(paper.library.topic, paper.library.slug, nativeMeta(paper));
+  atomicWrite(
+    path.join(
+      companionDir(paper.library.topic, paper.library.slug),
+      "research-identity.json",
+    ),
+    JSON.stringify(paper, null, 2),
+  );
 }
 export async function updatePaper(
   id: string,
@@ -473,16 +547,21 @@ export async function updatePaper(
     expectedVersion(paper.version, input.version);
     const changes = { ...input };
     delete changes.version;
+    const manual = new Set(paper.metadataManualFields ?? []);
+    for (const field of ["title", "authors", "year"] as const)
+      if (changes[field] !== undefined) manual.add(field);
+    if (["title", "authors", "year"].some((field) => field in changes))
+      paper.metadataManualFields = [...manual];
     Object.assign(paper, changes, {
       version: paper.version + 1,
       updatedAt: new Date().toISOString(),
     });
     if (paper.lastReadPage > paper.pageCount && paper.pageCount > 0)
       paper.lastReadPage = paper.pageCount;
-    writeMeta(paper.library.topic, paper.library.slug, nativeMeta(paper));
+    persistPaperInfo(paper);
     return paper;
   });
-  ensureResearchIndex(true);
+  await ensureResearchIndex(true);
   return updated;
 }
 export async function synchronizePdf(
@@ -519,9 +598,7 @@ export function validateSources(
     if (source.quote && source.page) {
       const text =
         paperPages(paper).find((p) => p.page === source.page)?.text || "";
-      const normalize = (v: string) =>
-        v.normalize("NFKC").replace(/\s+/g, "").toLowerCase();
-      if (text && !normalize(text).includes(normalize(source.quote)))
+      if (text && !matchesPdfQuote(text, source.quote))
         throw new ResearchError("引用文字未在指定页找到，请核对原文");
     }
     return { ...source, paperId, contentRevision: paper.contentRevision };
@@ -646,18 +723,18 @@ export async function saveKnowledge(
     return entry;
   });
 }
-export function researchContext(
+export async function researchContext(
   paperId: string,
   question?: string,
   sourcePaperIds?: string[],
-): ResearchContext {
-  const full = readWorkspace();
+): Promise<ResearchContext> {
+  const full = await readWorkspace();
   const paper = paperById(paperId, full);
   const state = activeWorkspace(full);
   const related: NonNullable<ResearchContext["related"]> = [];
   if (question || sourcePaperIds) {
     const matches = question
-      ? searchResearch(question, "personal").filter(
+      ? (await searchResearch(question, "personal")).filter(
           (r) => r.paperId && r.paperId !== paperId,
         )
       : [];
@@ -722,8 +799,11 @@ function searchScore(text: string, query: string): number {
   }
   return score;
 }
-export function searchResearch(query: string, scope = "all"): SearchResult[] {
-  const state = activeWorkspace();
+export async function searchResearch(
+  query: string,
+  scope = "all",
+): Promise<SearchResult[]> {
+  const state = await activeWorkspace();
   const results: SearchResult[] = [];
   const push = (
     item: Omit<SearchResult, "score" | "snippet">,
@@ -750,7 +830,14 @@ export function searchResearch(query: string, scope = "all"): SearchResult[] {
         entry.body + " " + entry.aliases.join(" "),
       );
   if (scope !== "education") {
-    if (ensureResearchIndex()) {
+    if (postgresEnabled()) {
+      results.push(
+        ...(await searchPostgres(
+          query,
+          state.papers.map((paper) => paper.id),
+        )),
+      );
+    } else if (await ensureResearchIndex()) {
       try {
         const matched = searchIndex(query);
         matched.forEach((hit, rank) => {
@@ -846,8 +933,8 @@ export function searchResearch(query: string, scope = "all"): SearchResult[] {
     if (!unique.has(result.id)) unique.set(result.id, result);
   return [...unique.values()].slice(0, 100);
 }
-export function exportMarkdown(paperId?: string): string {
-  const full = readWorkspace();
+export async function exportMarkdown(paperId?: string): Promise<string> {
+  const full = await readWorkspace();
   if (paperId) paperById(paperId, full);
   const state = activeWorkspace(full);
   const papers = paperId ? [paperById(paperId, state)] : state.papers;

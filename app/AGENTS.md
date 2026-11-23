@@ -32,6 +32,16 @@ Architecture diagram (code-accurate) in README.md.
 
 ## Core invariants (do not break)
 
+- **Local research workspace uses PostgreSQL.** When
+  `RESEARCH_DATABASE_HOST` or `RESEARCH_DATABASE_URL` is configured,
+  research papers, notes, annotations, concepts, graph, review, planner and
+  Web run records are authoritative in PostgreSQL. Legacy JSON is imported
+  once transactionally and retained for rollback; it is never a live fallback.
+  PDF files remain annotatable artifacts. Page extraction files are derived
+  caches backed by PostgreSQL page rows. Research search uses PostgreSQL.
+  The filesystem/SQLite rules below apply to inactive upstream Papernook
+  features and legacy compatibility tests.
+
 - **The filesystem is the source of truth.** Two trees:
   `data/papers/<topic>/<slug>.pdf` (+ `<slug>.exercises.pdf`) is the
   WebDAV-shared annotatable artifact; `data/library/<topic>/<slug>/` is the

@@ -9,6 +9,8 @@ import {
   readWorkspace,
   ResearchError,
 } from "./store";
+import { getResearchHistory } from "./paperflow-client";
+import { withResearchRunFiles } from "./purge-markers";
 
 /** ZIP STORE writer: portable backups without shell commands or an additional native dependency. */
 function crc32(bytes: Uint8Array): number {
@@ -59,36 +61,35 @@ function zip(files: { name: string; bytes: Buffer }[]): Buffer {
   end.writeUInt32LE(offset, 16);
   return Buffer.concat([...chunks, ...central, end]);
 }
-function createBackupSnapshot(): Uint8Array {
-  const state = readWorkspace();
+async function createBackupSnapshot(): Promise<Uint8Array> {
+  const state = await readWorkspace();
   const files: { name: string; bytes: Buffer }[] = [];
   let total = 0;
   if (state.pendingAnnotations.length)
     throw new ResearchError("批注正在提交，请保存完成后再备份", 409);
+  const addBytes = (name: string, bytes: Buffer) => {
+    total += bytes.length;
+    if (total > 1024 * 1024 * 1024)
+      throw new ResearchError("工作区超过1GB，请使用完整服务备份", 413);
+    files.push({ name, bytes });
+  };
   const add = (name: string, filename: string) => {
     if (!fs.existsSync(filename)) return;
     const stat = fs.statSync(filename);
     if (!stat.isFile()) return;
-    total += stat.size;
-    if (total > 1024 * 1024 * 1024)
-      throw new ResearchError("工作区超过1GB，请使用停止服务后的目录备份", 413);
-    files.push({ name, bytes: fs.readFileSync(filename) });
+    if (total + stat.size > 1024 * 1024 * 1024)
+      throw new ResearchError("工作区超过1GB，请使用完整服务备份", 413);
+    addBytes(name, fs.readFileSync(filename));
   };
-  add(
+  addBytes(
     "research/workspace.json",
-    path.join(getResearchDataDir(), "workspace.json"),
+    Buffer.from(JSON.stringify(state, null, 2), "utf8"),
   );
   for (const paper of state.papers) {
     const bytes = fs.readFileSync(paperPdfPath(paper));
     if (`"${digest(bytes)}"` !== paper.pdfEtag)
       throw new ResearchError("PDF版本正在变更，请刷新后再备份", 409);
-    total += bytes.length;
-    if (total > 1024 * 1024 * 1024)
-      throw new ResearchError("工作区超过1GB，请停机备份目录", 413);
-    files.push({
-      name: `papers/${paper.library.topic}/${paper.library.slug}.pdf`,
-      bytes,
-    });
+    addBytes(`papers/${paper.library.topic}/${paper.library.slug}.pdf`, bytes);
     const dir = companionDir(paper.library.topic, paper.library.slug);
     for (const file of [
       "meta.json",
@@ -101,25 +102,30 @@ function createBackupSnapshot(): Uint8Array {
         path.join(dir, file),
       );
   }
-  const runs = path.join(getResearchDataDir(), "runs");
-  if (fs.existsSync(runs))
-    for (const file of fs.readdirSync(runs))
-      if (/^[a-zA-Z0-9_-]+\.json$/.test(file))
-        add(`research/runs/${file}`, path.join(runs, file));
+  for (const run of await getResearchHistory(undefined, false)) {
+    if (!/^[a-zA-Z0-9_-]+$/.test(run.id))
+      throw new ResearchError("任务记录标识无效，备份未生成", 500);
+    addBytes(
+      `research/runs/${run.id}.json`,
+      Buffer.from(JSON.stringify(run, null, 2), "utf8"),
+    );
+  }
+  if ((await readWorkspace()).version !== state.version)
+    throw new ResearchError("工作区正在更新，请保存完成后再备份", 409);
   files.push({
     name: "恢复说明.txt",
     bytes: Buffer.from(
-      "教研阅记备份\n请先停止应用，再将本压缩包中的 papers、library、research 三个目录复制回统一 data 目录。RESEARCH_DATA_DIR 应指向其中 research 目录。模型凭据不在备份中，恢复后请单独配置。原有目录请先另存备份。\n",
+      "教研阅记成果备份\nresearch/workspace.json 和 research/runs 中的记录由当前工作区数据库导出。PDF 与正文位于 papers、library。恢复 PostgreSQL 工作区时，请使用项目的数据库恢复或导入流程；复制旧 JSON 文件不会覆盖已迁移的数据库。完整服务恢复请使用包含 PostgreSQL 数据库备份和本机资料的正式备份。模型凭据请单独保管。\n",
       "utf8",
     ),
   });
   return new Uint8Array(zip(files));
 }
 export async function createResearchBackup(): Promise<Uint8Array> {
-  return withFilesystemLock(
-    "research-workspace",
-    getResearchDataDir(),
-    30000,
-    async () => createBackupSnapshot(),
+  // Match permanent deletion's lock order: run records before the workspace.
+  return withResearchRunFiles(() =>
+    withFilesystemLock("research-workspace", getResearchDataDir(), 30000, () =>
+      createBackupSnapshot(),
+    ),
   );
 }

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="960" viewBox="0 0 1200 960" role="img" aria-labelledby="diagram-title diagram-desc">
+  <title id="diagram-title">教研阅记软件分层架构</title>
+  <desc id="diagram-desc">浏览器界面通过 Next.js API 使用 PaperFlow 分析服务、本地事实数据和检索索引；PaperFlow 连接华师大模型接口并持久化会话。</desc>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 1 1 L 9 5 L 1 9" fill="none" stroke="#28658b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <marker id="arrow-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 1 1 L 9 5 L 1 9" fill="none" stroke="#148080" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <style>
+      text { font-family: 'Microsoft YaHei', 'SimSun', sans-serif; fill: #172f3d; }
+      .title { font-size: 32px; font-weight: 600; }
+      .heading { font-size: 22px; font-weight: 600; }
+      .body { font-size: 19px; }
+      .small { font-size: 17px; }
+      .badge { font-size: 17px; font-weight: 600; }
+      .muted { fill: #607580; }
+      .blue { fill: #28658b; }
+      .teal { fill: #148080; }
+      .card { fill: #ffffff; stroke: #d6e1e7; stroke-width: 1.5; }
+      .connector { fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+  </defs>
+  <rect width="1200" height="960" fill="#ffffff"/>
+  <text x="56" y="56" class="title" data-max-width="1088">教研阅记 · 软件分层</text>
+  <text x="56" y="91" class="body muted" data-max-width="1088">论文阅读 · 批注笔记 · 对话分析 · 知识组织</text>
+
+  <rect x="56" y="122" width="1088" height="100" rx="14" class="card"/>
+  <rect x="56" y="122" width="6" height="100" rx="3" fill="#28658b"/>
+  <text x="80" y="160" class="heading" data-max-width="520">浏览器界面</text>
+  <text x="80" y="196" class="body muted" data-max-width="520">React 19 · PDF.js · Cytoscape.js</text>
+  <path d="M 656 142 V 202" stroke="#e1e9ed" stroke-width="1.5"/>
+  <text x="696" y="160" class="body" data-max-width="424">论文阅读 · 高亮批注</text>
+  <text x="696" y="196" class="body" data-max-width="424">问答分析 · 知识图谱</text>
+
+  <path d="M 600 222 V 278" class="connector" stroke="#28658b" marker-end="url(#arrow-blue)"/>
+  <text x="616" y="258" class="small muted" data-max-width="330">浏览器请求</text>
+
+  <rect x="56" y="278" width="1088" height="154" rx="14" fill="#f6fafc" stroke="#c9dce8" stroke-width="1.5"/>
+  <text x="80" y="319" class="heading" data-max-width="750">Web API 与业务层</text>
+  <rect x="966" y="297" width="154" height="34" rx="17" fill="#e5f0f7"/>
+  <text x="1043" y="320" class="badge blue" text-anchor="middle" data-max-width="138">Next.js 16</text>
+  <text x="80" y="359" class="body" data-max-width="520">论文 · 批注 · 笔记</text>
+  <text x="80" y="397" class="body" data-max-width="520">学习复习 · 知识图谱</text>
+  <text x="696" y="359" class="body" data-max-width="424">来源范围 · 概念组织</text>
+  <text x="696" y="397" class="body" data-max-width="424">原文证据 · 引用校验</text>
+
+  <path d="M 414 432 V 492" class="connector" stroke="#28658b" marker-end="url(#arrow-blue)"/>
+  <text x="430" y="470" class="small blue" data-max-width="340">逐行 JSON-RPC · TCP 17437</text>
+
+  <rect x="56" y="492" width="716" height="178" rx="14" fill="#f4faf8" stroke="#badbd6" stroke-width="1.5"/>
+  <text x="80" y="534" class="heading" data-max-width="460">AI 执行层</text>
+  <rect x="608" y="512" width="140" height="34" rx="17" fill="#def0eb"/>
+  <text x="678" y="535" class="badge teal" text-anchor="middle" data-max-width="124">Python 3.12</text>
+  <text x="80" y="576" class="body" data-max-width="668">PaperFlow · AgentRunner · 工具调用</text>
+  <text x="80" y="615" class="body" data-max-width="668">选文读取 · 论文检索 · SessionStore</text>
+
+  <path d="M 772 582 H 852" class="connector" stroke="#148080" marker-end="url(#arrow-teal)"/>
+  <text x="812" y="564" class="small teal" text-anchor="middle" data-max-width="76">HTTPS</text>
+  <rect x="852" y="492" width="292" height="178" rx="14" class="card"/>
+  <text x="876" y="534" class="heading" data-max-width="244">华师大模型接口</text>
+  <text x="876" y="576" class="body" data-max-width="244">OpenAI 兼容 API</text>
+  <text x="876" y="615" class="small muted" data-max-width="244">模型生成</text>
+
+  <path d="M 56 356 H 28 V 841 H 56" class="connector" stroke="#28658b" marker-end="url(#arrow-blue)"/>
+  <path d="M 660 670 V 712 H 990 V 762" class="connector" stroke="#148080" marker-end="url(#arrow-teal)"/>
+  <text x="770" y="702" class="small teal" data-max-width="250">对话持久化</text>
+  <text x="56" y="738" class="body muted" data-max-width="600">本地持久化</text>
+
+  <rect x="56" y="762" width="406" height="156" rx="14" class="card"/>
+  <text x="80" y="804" class="heading" data-max-width="358">事实数据</text>
+  <text x="80" y="843" class="body" data-max-width="358">本地 PDF · JSON · Markdown</text>
+  <text x="80" y="882" class="small muted" data-max-width="358">论文、批注与笔记</text>
+
+  <path d="M 462 841 H 484" class="connector" stroke="#28658b" marker-end="url(#arrow-blue)"/>
+  <rect x="484" y="762" width="330" height="156" rx="14" class="card"/>
+  <text x="508" y="804" class="heading" data-max-width="282">检索索引</text>
+  <text x="508" y="843" class="body" data-max-width="282">SQLite FTS5 · BM25</text>
+  <text x="508" y="882" class="small muted" data-max-width="282">中文词匹配</text>
+
+  <rect x="836" y="762" width="308" height="156" rx="14" class="card"/>
+  <text x="860" y="804" class="heading" data-max-width="260">会话记录</text>
+  <text x="860" y="843" class="body" data-max-width="260">SessionStore</text>
+  <text x="860" y="882" class="small muted" data-max-width="260">runtime</text>
+</svg>

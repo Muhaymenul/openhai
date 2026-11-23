@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="950" viewBox="0 0 1200 950" role="img" aria-labelledby="diagram-title diagram-desc">
+  <title id="diagram-title">教研阅记本机部署架构</title>
+  <desc id="diagram-desc">Windows 浏览器访问 Docker Compose 中的 Web 容器；Web 经内部 JSON-RPC 调用 PaperFlow 容器，容器挂载本机数据、会话和模型配置目录。</desc>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 1 1 L 9 5 L 1 9" fill="none" stroke="#28658b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <marker id="arrow-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 1 1 L 9 5 L 1 9" fill="none" stroke="#148080" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <style>
+      text { font-family: 'Microsoft YaHei', 'SimSun', sans-serif; fill: #172f3d; }
+      .title { font-size: 32px; font-weight: 600; }
+      .heading { font-size: 22px; font-weight: 600; }
+      .body { font-size: 19px; }
+      .small { font-size: 17px; }
+      .tiny { font-size: 16px; }
+      .muted { fill: #607580; }
+      .blue { fill: #28658b; }
+      .teal { fill: #148080; }
+      .card { fill: #ffffff; stroke: #d6e1e7; stroke-width: 1.5; }
+      .connector { fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+  </defs>
+  <rect width="1200" height="950" fill="#ffffff"/>
+  <text x="56" y="56" class="title" data-max-width="1088">教研阅记 · 本机部署</text>
+  <text x="56" y="91" class="body muted" data-max-width="1088">Windows · Docker Desktop · Docker Compose</text>
+
+  <rect x="32" y="112" width="812" height="806" rx="18" fill="#fafcfd" stroke="#cddbe3" stroke-width="1.5"/>
+  <text x="56" y="149" class="heading" data-max-width="764">Windows 本机</text>
+
+  <rect x="56" y="176" width="384" height="94" rx="14" class="card"/>
+  <text x="80" y="213" class="heading" data-max-width="336">本机浏览器</text>
+  <text x="80" y="248" class="body blue" data-max-width="336">http://127.0.0.1:3000</text>
+
+  <rect x="468" y="176" width="352" height="94" rx="14" class="card"/>
+  <text x="492" y="213" class="heading" data-max-width="304">桌面一键启动 / 关闭</text>
+  <text x="492" y="248" class="small muted" data-max-width="304">脚本管理 Docker Compose</text>
+
+  <path d="M 248 270 V 330" class="connector" stroke="#28658b" marker-end="url(#arrow-blue)"/>
+  <text x="264" y="313" class="small blue" data-max-width="314">HTTP · 端口 3000</text>
+  <path d="M 644 270 V 330" class="connector" stroke="#28658b" marker-end="url(#arrow-blue)"/>
+  <text x="660" y="310" class="small muted" data-max-width="158">启动 / 关闭</text>
+
+  <rect x="56" y="330" width="764" height="248" rx="16" fill="#f0f6fa" stroke="#c2d7e5" stroke-width="1.5"/>
+  <text x="80" y="368" class="heading" data-max-width="716">Docker Desktop · Docker Compose</text>
+
+  <rect x="80" y="392" width="290" height="154" rx="12" class="card"/>
+  <text x="104" y="431" class="heading" data-max-width="242">web 容器</text>
+  <text x="104" y="471" class="body" data-max-width="242">Next.js 16 · 端口 3000</text>
+  <text x="104" y="510" class="small muted" data-max-width="242">API · 业务处理 · 检索</text>
+
+  <path d="M 370 468 H 466" class="connector" stroke="#28658b" marker-end="url(#arrow-blue)"/>
+  <text x="418" y="449" class="tiny blue" text-anchor="middle" data-max-width="90">JSON-RPC</text>
+  <rect x="466" y="392" width="330" height="154" rx="12" fill="#f4faf8" stroke="#badbd6" stroke-width="1.5"/>
+  <text x="490" y="431" class="heading" data-max-width="282">paperflow 容器</text>
+  <text x="490" y="471" class="body" data-max-width="282">Python 3.12 · TCP 17437</text>
+  <text x="490" y="510" class="small muted" data-max-width="282">AgentRunner · SessionStore</text>
+
+  <path d="M 796 468 H 892" class="connector" stroke="#148080" marker-end="url(#arrow-teal)"/>
+  <text x="846" y="449" class="small teal" text-anchor="middle" data-max-width="90">HTTPS</text>
+  <rect x="892" y="392" width="276" height="154" rx="14" class="card"/>
+  <text x="916" y="431" class="heading" data-max-width="228">华师大模型接口</text>
+  <text x="916" y="471" class="body" data-max-width="228">OpenAI 兼容 API</text>
+  <text x="916" y="510" class="small muted" data-max-width="228">模型生成</text>
+
+  <rect x="56" y="680" width="764" height="198" rx="16" fill="#f7fafb" stroke="#d6e1e7" stroke-width="1.5"/>
+  <text x="56" y="900" class="body" data-max-width="764">E:\教育软件开发\papernook-paperflow</text>
+  <text x="56" y="670" class="tiny muted" data-max-width="120">本地目录挂载</text>
+  <path d="M 244 546 V 606 H 189 V 704" class="connector" stroke="#28658b" marker-start="url(#arrow-blue)" marker-end="url(#arrow-blue)"/>
+  <path d="M 584 546 V 616 H 431 V 704" class="connector" stroke="#148080" marker-start="url(#arrow-teal)" marker-end="url(#arrow-teal)"/>
+  <path d="M 680 704 V 606 H 724 V 546" class="connector" stroke="#148080" marker-end="url(#arrow-teal)"/>
+
+  <rect x="80" y="704" width="218" height="150" rx="12" class="card"/>
+  <text x="100" y="741" class="heading" data-max-width="178">data/</text>
+  <text x="100" y="779" class="tiny" data-max-width="190">PDF · JSON · Markdown</text>
+  <text x="100" y="818" class="tiny muted" data-max-width="178">index.db · 检索索引</text>
+
+  <rect x="322" y="704" width="218" height="150" rx="12" class="card"/>
+  <text x="342" y="741" class="heading" data-max-width="178">runtime/</text>
+  <text x="342" y="779" class="small" data-max-width="178">会话与运行记录</text>
+
+  <rect x="564" y="704" width="232" height="150" rx="12" class="card"/>
+  <text x="584" y="741" class="heading" data-max-width="192">private/</text>
+  <text x="584" y="779" class="small" data-max-width="192">模型连接配置</text>
+</svg>

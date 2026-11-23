@@ -17,6 +17,7 @@ import {
 } from "react";
 import type { FilteredGraph } from "./graph-data";
 import { canvasNodeLabel, GRAPH_FONT_FAMILY, graphStyle } from "./graph-style";
+import { readGraphPositions, timelinePositions } from "./graph-layout";
 
 interface GraphCanvasOptions {
   container: RefObject<HTMLDivElement | null>;
@@ -24,6 +25,9 @@ interface GraphCanvasOptions {
   visible: FilteredGraph;
   selectedId: string | null;
   onSelect(kind: "node" | "edge" | null, id: string | null): void;
+  layoutMode?: "network" | "timeline";
+  years?: Record<string, number | null>;
+  storageKey?: string;
 }
 
 let enginePromise: Promise<typeof import("cytoscape")> | undefined;
@@ -80,7 +84,10 @@ function updateTypography(
         ...nodeDimensions(kind, displaySize, zoom),
         labelFontSize: fontSize,
         presentationZoom: zoom,
-        canvasLabel: canvasNodeLabel({ label, kind }, measure),
+        canvasLabel:
+          (node.data("timelineYear")
+            ? String(node.data("timelineYear")) + "\n"
+            : "") + canvasNodeLabel({ label, kind }, measure),
       });
     });
     cy.edges().data("labelFontSize", fontSize);
@@ -345,6 +352,9 @@ export function useGraphCanvas({
   visible,
   selectedId,
   onSelect,
+  layoutMode = "network",
+  years,
+  storageKey = "all",
 }: GraphCanvasOptions): {
   cyRef: RefObject<Core | null>;
   ready: boolean;
@@ -355,7 +365,15 @@ export function useGraphCanvas({
   zoomBy(factor: number): void;
 } {
   const cyRef = useRef<Core | null>(null);
-  const inputs = useRef({ graph, visible, selectedId, onSelect });
+  const inputs = useRef({
+    graph,
+    visible,
+    selectedId,
+    onSelect,
+    layoutMode,
+    years,
+    storageKey,
+  });
   const savedPositions = useRef(new Map<string, Position>());
   const labelContext = useRef<CanvasRenderingContext2D | null>(null);
   const didLayout = useRef(false);
@@ -364,8 +382,87 @@ export function useGraphCanvas({
   const [zoom, setZoom] = useState(100);
 
   useEffect(() => {
-    inputs.current = { graph, visible, selectedId, onSelect };
-  }, [graph, visible, selectedId, onSelect]);
+    inputs.current = {
+      graph,
+      visible,
+      selectedId,
+      onSelect,
+      layoutMode,
+      years,
+      storageKey,
+    };
+  }, [graph, visible, selectedId, onSelect, layoutMode, years, storageKey]);
+
+  const rememberPositions = useCallback(() => {
+    const cy = cyRef.current;
+    if (!cy) return;
+    try {
+      localStorage.setItem(
+        "jiaoyan:graph-layout:v1:" +
+          inputs.current.storageKey +
+          ":" +
+          inputs.current.layoutMode,
+        JSON.stringify({
+          version: 1,
+          positions: cy
+            .nodes()
+            .toArray()
+            .slice(0, 2000)
+            .map((node) => [node.id(), node.position("x"), node.position("y")]),
+        }),
+      );
+    } catch {}
+  }, []);
+  const applyLayout = useCallback(
+    (restore = false) => {
+      const cy = cyRef.current;
+      if (!cy) return;
+      const current = inputs.current;
+      let saved = new Map<string, Position>();
+      if (restore) {
+        try {
+          saved = readGraphPositions(
+            localStorage.getItem(
+              "jiaoyan:graph-layout:v1:" +
+                current.storageKey +
+                ":" +
+                current.layoutMode,
+            ),
+          );
+        } catch {}
+      }
+      if (current.layoutMode === "timeline") {
+        const positions = timelinePositions(
+          current.visible.nodes,
+          current.years ?? {},
+        );
+        cy.nodes().forEach((node) => {
+          const position = positions.get(node.id());
+          if (position) node.position(position);
+        });
+      } else if (!saved.size) {
+        layoutGraph(cy, labelContext.current);
+      }
+      if (saved.size) {
+        cy.nodes().forEach((node) => {
+          const position = saved.get(node.id());
+          if (position) node.position(position);
+        });
+      }
+      cy.nodes().forEach((node) => {
+        node.data(
+          "timelineYear",
+          current.layoutMode === "timeline"
+            ? (current.years?.[String(node.data("paperId"))] ?? "未标年")
+            : null,
+        );
+        node.removeData("presentationZoom");
+      });
+      fitGraph(cy, labelContext.current);
+      rememberPositions();
+    },
+    [rememberPositions],
+  );
 
   const fit = useCallback(() => {
     if (cyRef.current) fitGraph(cyRef.current, labelContext.current);
@@ -374,7 +471,7 @@ export function useGraphCanvas({
     const cy = cyRef.current;
     if (!cy) return;
     try {
-      layoutGraph(cy, labelContext.current);
+      applyLayout();
       syncSelection(cy, inputs.current.selectedId, false);
       setError("");
     } catch (cause: unknown) {
@@ -382,7 +479,7 @@ export function useGraphCanvas({
         cause instanceof Error ? cause.message : "图谱布局暂时无法完成。",
       );
     }
-  }, []);
+  }, [applyLayout]);
   const zoomBy = useCallback((factor: number) => {
     if (cyRef.current) changeZoom(cyRef.current, factor);
   }, []);
@@ -457,6 +554,7 @@ export function useGraphCanvas({
           syncSelection(canvas, event.target.id(), false);
           inputs.current.onSelect("node", event.target.id());
         });
+        canvas.on("dragfree", "node", rememberPositions);
         canvas.on("tap", "edge", (event: EventObjectEdge) => {
           element.focus({ preventScroll: true });
           syncSelection(canvas, event.target.id(), false);
@@ -538,7 +636,7 @@ export function useGraphCanvas({
       cyRef.current = null;
       didLayout.current = false;
     };
-  }, [container]);
+  }, [container, rememberPositions]);
 
   useEffect(() => {
     const cy = cyRef.current;
@@ -563,6 +661,10 @@ export function useGraphCanvas({
     const cy = cyRef.current;
     if (ready && cy) syncSelection(cy, selectedId, true);
   }, [selectedId, ready]);
+
+  useEffect(() => {
+    if (ready) applyLayout(true);
+  }, [ready, layoutMode, storageKey, years, graph, applyLayout]);
 
   return { cyRef, ready, error, zoom, fit, relayout, zoomBy };
 }

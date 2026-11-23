@@ -13,6 +13,7 @@ import {
   Plus,
   Search,
   ShieldCheck,
+  Sparkles,
   Tag,
   Trash2,
   Upload,
@@ -41,6 +42,7 @@ import { PaperCover } from "./library/PaperCover";
 import { PaperTrashModal, RemovePaperModal } from "./library/PaperTrash";
 import trashStyles from "./library/trash.module.css";
 import { uploadPendingPdfs } from "./library/upload-queue";
+import metadataStyles from "./library/metadata.module.css";
 
 export function LibraryView({
   data,
@@ -69,6 +71,7 @@ export function LibraryView({
   const [importing, setImporting] = useState(false);
   const [edit, setEdit] = useState<ResearchPaper | null>(null);
   const [saving, setSaving] = useState(false);
+  const [recognizing, setRecognizing] = useState(false);
   const [removeId, setRemoveId] = useState("");
   const [trashOpen, setTrashOpen] = useState(false);
   const topics = [
@@ -134,12 +137,49 @@ export function LibraryView({
       setSaving(false);
     }
   }
+  async function recognizeEdit() {
+    if (!edit || saving || recognizing) return;
+    const original = data.papers.find((paper) => paper.id === edit.id);
+    setRecognizing(true);
+    try {
+      const result = await postJson<{ paper: ResearchPaper }>(
+        "/papers/" + edit.id + "/metadata",
+        { version: edit.version, retry: true },
+      );
+      setEdit((current) =>
+        current?.id === result.paper.id
+          ? {
+              ...result.paper,
+              title:
+                original && current.title !== original.title
+                  ? current.title
+                  : result.paper.title,
+              authors:
+                original && current.authors !== original.authors
+                  ? current.authors
+                  : result.paper.authors,
+              year:
+                original && current.year !== original.year
+                  ? current.year
+                  : result.paper.year,
+              topic: current.topic,
+              tags: current.tags,
+              readStatus: current.readStatus,
+            }
+          : current,
+      );
+      await onRefresh().catch(() => undefined);
+      notify(result.paper.metadataExtraction?.message || "论文信息已更新。");
+    } catch (cause) {
+      notify(errorText(cause), true);
+    } finally {
+      setRecognizing(false);
+    }
+  }
   return (
     <div className={styles.libraryPage}>
       <div className={styles.welcomeHeading}>
-        <h1>
-          文献库 <span>{data.papers.length}</span>
-        </h1>
+        <h1>文献库</h1>
         <div className={styles.actionRow}>
           <button
             className={styles.textButton}
@@ -192,9 +232,9 @@ export function LibraryView({
               key={value}
               className={filter === value ? styles.filterActive : ""}
               onClick={() => setFilter(value as LibraryReadFilter)}
+              aria-pressed={filter === value}
             >
               {label}
-              {value === "all" && <span>{data.papers.length}</span>}
             </button>
           ))}
         </div>
@@ -255,7 +295,9 @@ export function LibraryView({
             </details>
           )}
           <span className={filterStyles.resultCount} aria-live="polite">
-            显示 {filtered.length} / {data.papers.length} 篇
+            {hasFilters
+              ? `找到 ${filtered.length} 篇，共 ${data.papers.length} 篇`
+              : `共 ${data.papers.length} 篇文献`}
           </span>
           {hasFilters && (
             <button className={filterStyles.clear} onClick={clearFilters}>
@@ -323,10 +365,12 @@ export function LibraryView({
                   </span>
                 </div>
                 <h3>{paper.title}</h3>
-                <p className={styles.paperAuthors} title={paper.authors}>
-                  {paper.authors || "作者信息待补充"}
-                  {paper.year ? " · " + paper.year : ""}
-                </p>
+                <div className={metadataStyles.bibliographicLine}>
+                  <p className={styles.paperAuthors} title={paper.authors}>
+                    {paper.authors || "作者信息待补充"}
+                  </p>
+                  {paper.year && <span>{paper.year}</span>}
+                </div>
                 <div className={styles.paperTags}>
                   {paper.tags
                     .filter((tag) => tag !== paper.topic)
@@ -407,14 +451,36 @@ export function LibraryView({
       )}
 
       {edit && (
-        <Modal title="整理论文信息" onClose={() => setEdit(null)}>
+        <Modal
+          title="整理论文信息"
+          onClose={() => !recognizing && !saving && setEdit(null)}
+        >
           <form onSubmit={(event) => void updatePaper(event)}>
             <div className={styles.modalBody}>
+              <div className={metadataStyles.metadataActions}>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  disabled={saving || recognizing}
+                  onClick={() => void recognizeEdit()}
+                >
+                  {recognizing ? (
+                    <LoaderCircle size={14} className={styles.spin} />
+                  ) : (
+                    <Sparkles size={14} />
+                  )}
+                  {recognizing ? "正在识别…" : "自动识别论文信息"}
+                </button>
+                <p role="status">
+                  {edit.metadataExtraction?.message || "保留已手动填写的信息。"}
+                </p>
+              </div>
               <label className={styles.formLabel}>
                 论文标题
                 <input
                   required
                   value={edit.title}
+                  disabled={saving || recognizing}
                   onChange={(event) =>
                     setEdit({ ...edit, title: event.target.value })
                   }
@@ -425,6 +491,7 @@ export function LibraryView({
                   作者
                   <input
                     value={edit.authors}
+                    disabled={saving || recognizing}
                     onChange={(event) =>
                       setEdit({ ...edit, authors: event.target.value })
                     }
@@ -434,6 +501,7 @@ export function LibraryView({
                   年份
                   <input
                     value={edit.year}
+                    disabled={saving || recognizing}
                     onChange={(event) =>
                       setEdit({ ...edit, year: event.target.value })
                     }
@@ -444,6 +512,7 @@ export function LibraryView({
                 研究主题
                 <input
                   value={edit.topic}
+                  disabled={saving || recognizing}
                   onChange={(event) =>
                     setEdit({ ...edit, topic: event.target.value })
                   }
@@ -453,6 +522,7 @@ export function LibraryView({
                 标签 · 用逗号分隔
                 <input
                   value={edit.tags.join("，")}
+                  disabled={saving || recognizing}
                   onChange={(event) =>
                     setEdit({
                       ...edit,
@@ -468,6 +538,7 @@ export function LibraryView({
                 阅读状态
                 <select
                   value={edit.readStatus}
+                  disabled={saving || recognizing}
                   onChange={(event) =>
                     setEdit({
                       ...edit,
@@ -487,13 +558,14 @@ export function LibraryView({
                 type="button"
                 className={styles.secondaryButton}
                 onClick={() => setEdit(null)}
+                disabled={saving || recognizing}
               >
                 取消
               </button>
               <button
                 type="submit"
                 className={styles.primaryButton}
-                disabled={saving}
+                disabled={saving || recognizing}
               >
                 {saving ? "保存中…" : "保存信息"}
               </button>
@@ -520,6 +592,11 @@ export function UploadModal({
   const [progress, setProgress] = useState(0);
   const [failure, setFailure] = useState("");
   const [dragging, setDragging] = useState(false);
+  const [autoMetadata, setAutoMetadata] = useState(true);
+  const [stage, setStage] = useState("");
+  const [metadataMessages, setMetadataMessages] = useState(
+    () => new Map<File, string>(),
+  );
   const input = useRef<HTMLInputElement>(null);
   const uploadLock = useRef(false);
   const uploaded = useRef(new Set<File>());
@@ -554,16 +631,54 @@ export function UploadModal({
     setFailure("");
     let count = 0;
     let currentFile = "";
+    let metadataFailures = 0;
     try {
       await uploadPendingPdfs(
         pending,
         uploaded.current,
         async (file) => {
           currentFile = file.name;
+          setStage(file.name + "：正在保存 PDF…");
           const form = new FormData();
           form.set("file", file);
           if (topic.trim()) form.set("topic", topic.trim());
-          await researchApi("/papers", { method: "POST", body: form });
+          const imported = await researchApi<{
+            paper: ResearchPaper;
+            imported?: boolean;
+          }>("/papers", { method: "POST", body: form });
+          if (
+            autoMetadata &&
+            imported.imported !== false &&
+            !imported.paper.metadataExtraction
+          ) {
+            setStage(file.name + "：正在识别题名、作者和年份…");
+            try {
+              const identified = await postJson<{ paper: ResearchPaper }>(
+                "/papers/" + imported.paper.id + "/metadata",
+                { version: imported.paper.version },
+              );
+              const extraction = identified.paper.metadataExtraction;
+              if (extraction?.status !== "ready") metadataFailures++;
+              setMetadataMessages((current) =>
+                new Map(current).set(
+                  file,
+                  extraction?.message || "已导入，信息待补全。",
+                ),
+              );
+            } catch {
+              metadataFailures++;
+              setMetadataMessages((current) =>
+                new Map(current).set(
+                  file,
+                  "PDF已导入，可在编辑信息中重试识别。",
+                ),
+              );
+            }
+          } else if (imported.imported === false) {
+            setMetadataMessages((current) =>
+              new Map(current).set(file, "已在文献库，未重复导入或识别。"),
+            );
+          }
         },
         () => {
           count++;
@@ -573,11 +688,21 @@ export function UploadModal({
       );
       try {
         await onRefresh();
-        notify("已导入 " + uploaded.current.size + " 篇论文。");
+        notify(
+          "已导入 " +
+            uploaded.current.size +
+            " 篇论文。" +
+            (metadataFailures ? "部分书目信息可在编辑信息中重试。" : ""),
+        );
       } catch {
         notify("论文已导入，请刷新页面更新文献库。", true);
       }
-      onClose();
+      setStage("");
+      if (metadataFailures)
+        setFailure(
+          "PDF已导入。部分论文信息待补全，可在文献库的“编辑信息”中重试识别。",
+        );
+      else onClose();
     } catch (error) {
       setFailure(currentFile + "：" + errorText(error));
       await onRefresh().catch(() => undefined);
@@ -588,6 +713,7 @@ export function UploadModal({
     } finally {
       uploadLock.current = false;
       setUploading(false);
+      setStage("");
     }
   }
   return (
@@ -638,6 +764,9 @@ export function UploadModal({
                 <span>
                   {file.name}
                   <small>{(file.size / 1024 / 1024).toFixed(1)} MB</small>
+                  {metadataMessages.has(file) && (
+                    <small>{metadataMessages.get(file)}</small>
+                  )}
                 </span>
                 {completedFiles.has(file) ? (
                   <Check size={16} aria-label="已导入" />
@@ -661,6 +790,23 @@ export function UploadModal({
             {failure}
           </p>
         )}
+        {stage && (
+          <p className={metadataStyles.uploadStage} role="status">
+            {stage}
+          </p>
+        )}
+        <label className={metadataStyles.metadataChoice}>
+          <input
+            type="checkbox"
+            checked={autoMetadata}
+            disabled={uploading}
+            onChange={(event) => setAutoMetadata(event.target.checked)}
+          />
+          <span>
+            自动识别论文信息
+            <small>将前两页文字发送至你配置的模型，使用该接口额度。</small>
+          </span>
+        </label>
         <label className={styles.formLabel}>
           研究主题 <span>选填</span>
           <input
@@ -672,7 +818,7 @@ export function UploadModal({
         </label>
         <div className={styles.softInfo}>
           <ShieldCheck size={15} />
-          文件保存在本机，仅分析时发送相关片段至模型服务。
+          文件保存在本机。识别结果可在文献库中核对、修改。
         </div>
       </div>
       <div className={styles.modalFooter}>

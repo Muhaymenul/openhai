@@ -1,0 +1,7 @@
+教研阅记桌面版第三方来源
+
+本安装包使用 Electron，许可证位于安装目录 LICENSE.electron.txt；Chromium 及其组件的许可证位于 LICENSES.chromium.html。
+
+应用图标沿用完整教研阅记项目的 app/public/logo.png，其上游为 Papernook（https://github.com/affromero/papernook），MIT 许可证随本目录 Papernook-LICENSE.txt 提供。图标 SVG 原文件中标注由 QuiverAI Arrow 创建。
+
+完整业务后端未包含在本安装包内。Papernook、PaperFlow、Web 字体及其他业务依赖的来源和许可见用户所部署的完整项目 UPSTREAM.md。

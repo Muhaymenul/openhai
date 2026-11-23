@@ -1,0 +1,13 @@
+教研阅记桌面版 0.1.1 — 安装须知
+
+此安装包提供 Windows x64 桌面程序及 Electron 运行环境。
+
+使用前需在本机部署完整教研阅记 demo，并准备 Docker Desktop、PostgreSQL 和该用户自己的模型接口。安装后首次打开，请选择包含 docker-compose.yml、scripts 和 app 的项目文件夹。
+
+本包不包含其他用户的论文、笔记、数据库内容、模型令牌或私有配置。不会自动安装或替换 PostgreSQL 和 Docker，也不会修改既有数据库。
+
+可选择安装位置。桌面浏览器资料、缓存和连接设置保存在安装文件夹旁的 JiaoyanDesktopData 文件夹，升级或卸载时保留。原业务资料仍由所选 demo 项目和 PostgreSQL 保存。关闭程序后后台服务继续运行；需要停止时使用原项目的“停止Demo.cmd”。
+
+桌面接入代码按 MIT 许可证提供。Electron 与 Chromium 的第三方许可证随安装目录中的 LICENSE.electron.txt 与 LICENSES.chromium.html 提供。原业务项目的许可与来源见完整项目 UPSTREAM.md。
+
+这是本地试用安装包，未配置代码签名证书。请仅从项目可信发布者处获取；本次不会向任何平台上传安装包或用户数据。

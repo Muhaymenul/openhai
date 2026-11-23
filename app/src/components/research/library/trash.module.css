@@ -22,7 +22,7 @@
 }
 
 .cardActions > button:focus-visible {
-  outline: 2px solid #0066cc;
+  outline: 2px solid #59634d;
   outline-offset: 3px;
 }
 
@@ -30,13 +30,13 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  color: #313942;
+  color: var(--ink, #292d27);
   margin-bottom: 14px;
 }
 
 .removalPaper > svg {
   flex-shrink: 0;
-  color: #818995;
+  color: #777b70;
   margin-top: 2px;
 }
 
@@ -49,7 +49,7 @@
 
 .description {
   margin: 0;
-  color: #68717c;
+  color: var(--muted, #6c7066);
   font-size: 14px;
   line-height: 1.8;
 }
@@ -89,7 +89,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  color: #7b828c;
+  color: var(--muted, #6c7066);
   font-size: 13px;
   margin-bottom: 8px;
 }
@@ -104,7 +104,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  border-bottom: 1px solid #e4e7eb;
+  border-bottom: 1px solid var(--line, #e3e1d8);
   padding: 16px 0;
 }
 
@@ -117,9 +117,9 @@
   height: 54px;
   display: grid;
   place-items: center;
-  border: 1px solid #e0e4e9;
-  background: #f4f5f7;
-  color: #8b939f;
+  border: 1px solid var(--line, #e3e1d8);
+  background: #fffefb;
+  color: #777b70;
   flex-shrink: 0;
 }
 
@@ -132,21 +132,114 @@
   font-size: 15px;
   font-weight: 500;
   line-height: 1.6;
-  color: #343d48;
+  color: var(--ink, #292d27);
   margin: 0 0 4px;
   overflow-wrap: anywhere;
 }
 
 .trashPaperInfo p,
 .trashPaperInfo time {
-  color: #818995;
+  color: var(--muted, #6c7066);
   font-size: 12px;
   line-height: 1.8;
   margin: 0;
 }
 
-.trashList > li > button {
+.rowActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
   flex-shrink: 0;
+}
+
+.rowActions > button {
+  min-height: 34px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.rowActions > button:first-child {
+  color: #515d46;
+  background: transparent;
+  border-color: #d3d9cc;
+  padding: 6px 11px;
+}
+
+.toolbarActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+}
+
+.purgeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 4px;
+  min-height: 34px;
+  padding: 6px 7px;
+  color: #925045;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.purgeButton:hover:not(:disabled) {
+  background: #faf0ec;
+  color: #8b3028;
+}
+
+.purgeButton:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.rowActions button:focus-visible,
+.purgeButton:focus-visible,
+.confirmButton:focus-visible {
+  outline: 2px solid #59634d;
+  outline-offset: 3px;
+}
+
+.deleteConfirmation {
+  padding-block: 2px 8px;
+}
+
+.deleteSummary {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--muted, #6c7066);
+}
+
+.deleteList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 18px;
+  max-height: min(240px, 30dvh);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.deleteList > li {
+  border-bottom: 1px solid var(--line, #e3e1d8);
+  color: var(--ink, #292d27);
+  padding-block: 11px;
+  font-size: 15px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.deleteProgress {
+  margin: 12px 0 0;
+  color: #515d46;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 
 .loading {
@@ -155,7 +248,7 @@
   justify-content: center;
   min-height: 160px;
   gap: 10px;
-  color: #818995;
+  color: var(--muted, #6c7066);
   font-size: 14px;
 }
 
@@ -175,7 +268,19 @@
   .trashPaperInfo {
     flex-basis: calc(100% - 44px);
   }
-  .trashList > li > button {
+  .rowActions {
     margin-left: 44px;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+  .trashToolbar {
+    align-items: flex-start;
+  }
+  .toolbarActions {
+    gap: 4px 8px;
+  }
+  .rowActions > button,
+  .toolbarActions > button {
+    min-height: 42px;
   }
 }

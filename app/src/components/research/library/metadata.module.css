@@ -1,0 +1,54 @@
+.bibliographicLine {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  min-width: 0;
+}
+.bibliographicLine > p {
+  min-width: 0;
+}
+.bibliographicLine > span {
+  flex: 0 0 auto;
+  color: #63685e;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.metadataActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.metadataActions p,
+.uploadStage {
+  margin: 0;
+  color: #63685e;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.metadataChoice {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  margin: 16px 0;
+  font-size: 14px;
+  cursor: pointer;
+}
+.metadataChoice input {
+  width: 16px;
+  height: 16px;
+  margin: 4px 0 0;
+  accent-color: #596148;
+}
+.metadataChoice small {
+  display: block;
+  margin-top: 3px;
+  color: #63685e;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.metadataChoice input:focus-visible {
+  outline: 2px solid #596148;
+  outline-offset: 3px;
+}

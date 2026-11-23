@@ -129,11 +129,57 @@
 .page .toolbar {
   flex: none;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 20px;
   min-height: 56px;
   padding: 8px 16px;
   border-bottom: 1px solid #e8eaed;
+}
+.page .filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #e8eaed;
+}
+.page .filters select {
+  min-width: 100px;
+  max-width: 190px;
+  height: 30px;
+  border: 1px solid #dce1dd;
+  border-radius: 4px;
+  background: #fff;
+  padding: 0 8px;
+  color: #59665c;
+  font-size: 12px;
+}
+.page .layoutSwitch {
+  display: flex;
+  padding: 2px;
+  border: 1px solid #dce1dd;
+  border-radius: 4px;
+  margin-left: auto;
+}
+.page .layoutSwitch button {
+  border: 0;
+  background: none;
+  border-radius: 3px;
+  padding: 3px 9px;
+  color: #68756c;
+  font-size: 12px;
+}
+.page .layoutSwitch button[aria-pressed="true"] {
+  background: #eaf0e9;
+  color: #334c39;
+}
+.page .citationButton {
+  border: 0;
+  background: none;
+  padding: 4px 7px;
+  color: #5b6f61;
+  font-size: 12px;
 }
 .page .tabs,
 .page .inspectorTabs {

@@ -11,8 +11,8 @@ $engine = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
 $icon = Join-Path $projectRoot 'app\src\app\favicon.ico'
 $destination = [IO.Path]::GetFullPath($DestinationDirectory)
 $definitions = @(
-  @{ name = '打开教研阅记（openhai）'; action = 'start'; description = '教研阅记 openhai：打开本机论文阅读工作区' },
-  @{ name = '关闭教研阅记（openhai）'; action = 'stop'; description = '教研阅记 openhai：关闭本项目后台，保留论文和笔记' }
+  @{ name = '打开教研阅记'; action = 'start'; description = '教研阅记：打开本机论文阅读工作区' },
+  @{ name = '关闭教研阅记'; action = 'stop'; description = '教研阅记：关闭本项目后台，保留论文和笔记' }
 )
 
 try {
@@ -33,7 +33,7 @@ try {
       if (Test-Path -LiteralPath $shortcutPath) {
         $existing = $shell.CreateShortcut($shortcutPath)
         try {
-          if ($existing.Description -notlike '教研阅记 openhai：*' -and $existing.Arguments -notlike ('*' + $launcher + '*')) { throw ('已有同名快捷方式，未覆盖：' + $shortcutPath) }
+          if ($existing.Description -notlike '教研阅记：*' -and $existing.Arguments -notlike ('*' + $launcher + '*')) { throw ('已有同名快捷方式，未覆盖：' + $shortcutPath) }
         } finally { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($existing) }
       }
     }

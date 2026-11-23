@@ -35,7 +35,7 @@ describe("local research planner", () => {
     });
     const first = await createPlannerTask(input);
     expect((await createPlannerTask(input)).id).toBe(first.id);
-    expect(listPlannerTasks()).toHaveLength(1);
+    expect(await listPlannerTasks()).toHaveLength(1);
     await expect(
       createPlannerTask({ ...input, title: "另一个操作" }),
     ).rejects.toThrow("用于其他内容");
@@ -66,7 +66,7 @@ describe("local research planner", () => {
       }),
     ).rejects.toThrow("未找到论文");
   });
-  it("suggests Shanghai dates correctly without silently creating tasks or accepting impossible dates", () => {
+  it("suggests Shanghai dates correctly without silently creating tasks or accepting impossible dates", async () => {
     const now = new Date("2026-10-30T17:30:00Z"); // Saturday 01:30 in Shanghai.
     expect(parseDeadlineText("明天下午五点完成精读", now).dueLocal).toBe(
       "2026-11-01T17:00",
@@ -92,7 +92,7 @@ describe("local research planner", () => {
     expect(parseDeadlineText("明天下午五点一刻完成精读", now).dueLocal).toBe(
       "",
     );
-    expect(listPlannerTasks()).toEqual([]);
+    expect(await listPlannerTasks()).toEqual([]);
   });
   it("exports valid folded UTF-8 calendar events and rejects cross-site saves", async () => {
     const task = await createPlannerTask(
@@ -101,7 +101,7 @@ describe("local research planner", () => {
         dueAt: "2026-11-02T17:00:00+08:00",
       }),
     );
-    const calendar = plannerCalendar();
+    const calendar = await plannerCalendar();
     expect(calendar).toContain("DTSTART:20261102T090000Z");
     expect(calendar).toContain("TRIGGER:-PT15M");
     expect(
@@ -115,7 +115,7 @@ describe("local research planner", () => {
       task.id,
       plannerPatchSchema.parse({ status: "archived", version: 1 }),
     );
-    expect(plannerCalendar()).not.toContain("BEGIN:VEVENT");
+    expect(await plannerCalendar()).not.toContain("BEGIN:VEVENT");
     const response = await handlePlannerRequest(
       new Request("http://127.0.0.1:3000/api/research/planner", {
         method: "POST",
@@ -131,6 +131,6 @@ describe("local research planner", () => {
       }),
     );
     expect(response.status).toBe(403);
-    expect(listPlannerTasks()).toHaveLength(1);
+    expect(await listPlannerTasks()).toHaveLength(1);
   });
 });

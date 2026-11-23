@@ -36,8 +36,8 @@ export const plannerPatchSchema = z
   })
   .partial({ paperId: true });
 
-export function listPlannerTasks() {
-  return activeWorkspace().plannerTasks ?? [];
+export async function listPlannerTasks() {
+  return (await activeWorkspace()).plannerTasks ?? [];
 }
 
 export async function createPlannerTask(
@@ -128,8 +128,9 @@ const timestamp = (value: string) =>
     .toISOString()
     .replace(/[-:]/g, "")
     .replace(/\.\d{3}/, "");
-export function plannerCalendar(tasks = listPlannerTasks()): string {
-  const state = readWorkspace();
+export async function plannerCalendar(tasks?: PlannerTask[]): Promise<string> {
+  const state = await readWorkspace();
+  const calendarTasks = tasks ?? activeWorkspace(state).plannerTasks ?? [];
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -138,7 +139,7 @@ export function plannerCalendar(tasks = listPlannerTasks()): string {
     "METHOD:PUBLISH",
   ];
   const ids = new Set(activeWorkspace(state).papers.map((paper) => paper.id));
-  for (const task of tasks.filter(
+  for (const task of calendarTasks.filter(
     (value) =>
       value.status !== "archived" && (!value.paperId || ids.has(value.paperId)),
   )) {

@@ -315,6 +315,16 @@
   display: none !important;
 }
 
+/* Saved highlight popup hit areas sit above the selectable text. In normal
+   reading mode let the text layer handle the drag; PdfComments resolves a
+   simple click by its coordinates, and keyboard activation stays available. */
+.root[data-controlled-comments="true"][data-pdf-edit-mode="select"]
+  :global(.annotationLayer .highlightAnnotation),
+.root[data-controlled-comments="true"][data-pdf-edit-mode="select"]
+  :global(.annotationLayer .highlightAnnotation *) {
+  pointer-events: none !important;
+}
+
 .toolbar .keyboardPlace {
   position: absolute;
   width: 1px;

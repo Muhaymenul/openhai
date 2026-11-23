@@ -194,7 +194,7 @@ async function prepareCover(
     const bytes = await readImage(`${prefix}.png`);
     if (!bytes) throw new ResearchError("封面暂时不可用", 503);
     // Never publish a cover under an old PDF version after an external save.
-    const paper = paperById(paperId);
+    const paper = await paperById(paperId);
     await checkedPdfPath(paperPdfPath(paper));
     const current = await readVersionedPdfFile(
       paper.library.topic,
@@ -220,7 +220,7 @@ export async function researchCoverResponse(
   paperId: string,
 ): Promise<Response> {
   idSchema.parse(paperId);
-  const paper = paperById(paperId);
+  const paper = await paperById(paperId);
   // Resolve only a known library record; URL parameters never select files.
   await checkedPdfPath(paperPdfPath(paper));
   const source = await readVersionedPdfFile(

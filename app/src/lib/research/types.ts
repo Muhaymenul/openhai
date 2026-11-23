@@ -49,6 +49,12 @@ export interface ResearchPaper {
   version: number;
   lastReadPage: number;
   originalHash?: string;
+  metadataManualFields?: ("title" | "authors" | "year")[];
+  metadataExtraction?: {
+    status: "ready" | "failed" | "skipped";
+    message: string;
+    updatedAt: string;
+  };
   createdAt: string;
   updatedAt: string;
   library: { topic: string; slug: string };
@@ -132,6 +138,18 @@ export interface ResearchGraph {
   version: number;
 }
 export interface ResearchRun {
+  memoryContext?: {
+    projectId?: string;
+    projectTitle?: string;
+    researchQuestion?: string;
+    projectSummary?: string;
+    memoryIds: string[];
+    items?: Pick<
+      import("./memory/types").ResearchMemory,
+      "id" | "kind" | "text" | "version"
+    >[];
+    preferenceVersion: number;
+  };
   /** Missing on historical records, which used grounded-only prompts. */
   answerStyle?: AnswerStyle;
   referenceConceptIds?: string[];
@@ -165,6 +183,7 @@ export interface ResearchRun {
   proposals?: unknown[];
 }
 export interface ResearchContext {
+  memory?: import("./memory/types").ResearchMemoryContext;
   /** Explicit source pool for tools; never automatically appended to a model prompt. */
   sourceDocuments?: ResearchSourceDocument[];
   studyMaterials?: import("./learning-types").LearningMaterial[];
@@ -180,6 +199,7 @@ export interface ResearchContext {
   }[];
 }
 export interface StartResearchRunInput {
+  projectId?: string;
   answerStyle?: AnswerStyle;
   /** Undefined selects relevant concepts automatically; [] disables them. */
   referenceConceptIds?: string[];

@@ -239,9 +239,7 @@ export function TasksSettings({
       setHealth(result.health);
       notify(
         result.health.ok
-          ? result.health.configured
-            ? "分析服务正常，模型配置已载入。"
-            : "分析服务正常，请按设置页说明接入自己的模型。"
+          ? "分析服务正常，模型配置已载入。"
           : "分析服务尚未就绪，请检查本地启动状态。",
         !result.health.ok,
       );
@@ -397,26 +395,7 @@ export function TasksSettings({
                 </div>
               </dl>
               <div className={styles.softInfo}>
-                <p>
-                  接入自己的模型：在项目目录打开 <code>private/model.env</code>
-                  ，填写接口根地址、模型 ID 和自己的令牌。
-                </p>
-                <p>
-                  对应字段为 <code>PAPERFLOW_LLM_BASE_URL</code>、
-                  <code>PAPERFLOW_LLM_DEFAULT_MODEL</code>、
-                  <code>PAPERFLOW_LLM_API_KEY</code>。保存后运行
-                  <code> docker compose restart paperflow</code>，再点击检查。
-                </p>
-                <p>
-                  <a
-                    href="https://github.com/Muhaymenul/openhai#首次接入自己的-ai"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    查看接入说明
-                  </a>
-                  。论文片段在分析时发送给模型服务；资料保存在本机。
-                </p>
+                论文片段在分析时发送给模型服务；阅读、已有笔记与批注保存在本机。
               </div>
             </div>
           </section>

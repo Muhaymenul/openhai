@@ -39,6 +39,32 @@ function knowledgeNodeId(
 function edgeId(source: string, target: string, kind: string) {
   return `edge-${digest([source, target, kind]).slice(0, 32)}`;
 }
+export type DerivedGraphEdge = GraphEdge & { derivationKey?: string };
+function existingEdge(
+  state: WorkspaceState,
+  source: string,
+  target: string,
+  kind: string,
+  conceptKey?: string,
+) {
+  const id = edgeId(
+    source,
+    target,
+    conceptKey ? `${kind}:${conceptKey}` : kind,
+  );
+  return (
+    state.graph.edges.find((edge) => edge.id === id) ||
+    state.graph.edges.find(
+      (edge) =>
+        edge.source === source &&
+        edge.target === target &&
+        edge.kind === kind &&
+        (conceptKey
+          ? (edge as DerivedGraphEdge).derivationKey === conceptKey
+          : !(edge as DerivedGraphEdge).derivationKey),
+    )
+  );
+}
 function attachNode(state: WorkspaceState, node: GraphNode) {
   if (!state.graph.nodes.some((n) => n.id === node.id))
     state.graph.nodes.push(node);
@@ -53,26 +79,55 @@ function attachEdge(
     edge.target,
     conceptKey ? `${edge.kind}:${conceptKey}` : edge.kind,
   );
-  const existing = state.graph.edges.find((e) => e.id === id);
+  const existing = existingEdge(
+    state,
+    edge.source,
+    edge.target,
+    edge.kind,
+    conceptKey,
+  );
   if (existing) {
+    if (existing.status === "rejected") return existing;
+    const sourceChanged = existing.evidence.some(
+      (source) =>
+        source.paperId &&
+        source.contentRevision &&
+        source.contentRevision !==
+          state.papers.find((paper) => paper.id === source.paperId)
+            ?.contentRevision,
+    );
+    if (
+      (existing.stale || sourceChanged) &&
+      edge.kind !== "source" &&
+      edge.origin !== "user"
+    ) {
+      existing.evidence = edge.evidence;
+      existing.rationale = edge.rationale;
+      existing.status = "candidate";
+      existing.stale = false;
+      existing.version++;
+      existing.updatedAt = new Date().toISOString();
+      return existing;
+    }
     for (const source of edge.evidence)
       if (!existing.evidence.some((s) => digest(s) === digest(source)))
         existing.evidence.push(source);
-    // Confirmation and rejection are user decisions; reruns cannot reset either.
+    // Reruns with current evidence preserve the user's confirmation.
     return existing;
   }
   const now = new Date().toISOString();
-  const created: GraphEdge = {
+  const created: DerivedGraphEdge = {
     ...edge,
     id,
     version: 1,
     createdAt: now,
     updatedAt: now,
+    ...(conceptKey ? { derivationKey: conceptKey } : {}),
   };
   state.graph.edges.push(created);
   return created;
 }
-function baseGraph(state: WorkspaceState) {
+export function baseGraph(state: WorkspaceState) {
   const confirmedNotes = new Set(
     state.notes.filter((n) => n.confirmed).map((n) => n.id),
   );
@@ -151,11 +206,18 @@ function baseGraph(state: WorkspaceState) {
       (source) =>
         source.paperId &&
         source.contentRevision &&
-        state.papers.find((p) => p.id === source.paperId)?.contentRevision !==
-          source.contentRevision,
+        (state.papers.find((p) => p.id === source.paperId)?.contentRevision !==
+          source.contentRevision ||
+          (edge.kind === "cites" &&
+            !!source.title &&
+            state.papers.find((p) => p.id === source.paperId)?.title !==
+              source.title)),
     );
     edge.stale =
-      edge.kind === "shared_concept" ? Boolean(edge.stale || stale) : stale;
+      edge.kind === "shared_concept" ||
+      (edge.kind === "shared_method" && edge.origin === "source")
+        ? Boolean(edge.stale || stale)
+        : stale;
   }
 }
 /** Evidence-backed topical overlap, never an inferred citation or claim of agreement. */
@@ -163,9 +225,22 @@ function sharedConceptEdges(state: WorkspaceState, create: boolean): void {
   const literal = (value: string) =>
     value.normalize("NFKC").replace(/\s+/g, "").toLowerCase();
   const pagesByPaper = new Map<string, ReturnType<typeof paperPages>>();
-  const memberships = new Map<string, Map<string, SourceRef[]>>();
+  const memberships = new Map<
+    string,
+    {
+      kind: "shared_concept" | "shared_method";
+      label: string;
+      papers: Map<string, SourceRef[]>;
+    }
+  >();
   for (const edge of state.graph.edges) {
-    if (edge.kind !== "mentions" || edge.status === "rejected" || edge.stale)
+    if (
+      !["mentions", "discusses", "uses_method", "reports"].includes(
+        edge.kind,
+      ) ||
+      edge.status === "rejected" ||
+      edge.stale
+    )
       continue;
     const paperNode = state.graph.nodes.find(
       (n) => n.id === edge.source && n.kind === "paper",
@@ -202,25 +277,38 @@ function sharedConceptEdges(state: WorkspaceState, create: boolean): void {
       );
     });
     if (!valid.length) continue;
-    const papers =
-      memberships.get(concept.id) || new Map<string, SourceRef[]>();
-    papers.set(paperNode.id, valid);
-    memberships.set(concept.id, papers);
+    const kind =
+      edge.kind === "uses_method" ? "shared_method" : "shared_concept";
+    const key = kind === "shared_method" ? `method:${concept.id}` : concept.id;
+    const membership = memberships.get(key) || {
+      kind,
+      label: concept.label,
+      papers: new Map<string, SourceRef[]>(),
+    };
+    membership.papers.set(paperNode.id, valid);
+    memberships.set(key, membership);
   }
   const active = new Set<string>();
-  for (const [conceptKey, papers] of memberships) {
+  for (const [conceptKey, membership] of memberships) {
+    const { papers, kind, label } = membership;
     const ids = [...papers.keys()].sort();
-    const label =
-      state.graph.nodes.find((n) => n.id === conceptKey)?.label || "同一概念";
     for (let i = 0; i < ids.length; i++)
       for (let j = i + 1; j < ids.length; j++) {
         const source = ids[i],
           target = ids[j];
-        const id = edgeId(source, target, `shared_concept:${conceptKey}`);
+        const id = edgeId(source, target, `${kind}:${conceptKey}`);
         active.add(id);
+        for (const matched of state.graph.edges.filter(
+          (edge) =>
+            edge.source === source &&
+            edge.target === target &&
+            edge.kind === kind &&
+            (edge as DerivedGraphEdge).derivationKey === conceptKey,
+        ))
+          active.add(matched.id);
         if (!create) continue;
         const evidence = [papers.get(source)![0], papers.get(target)![0]];
-        const existing = state.graph.edges.find((e) => e.id === id);
+        const existing = existingEdge(state, source, target, kind, conceptKey);
         const changed = Boolean(
           existing && digest(existing.evidence) !== digest(evidence),
         );
@@ -229,24 +317,38 @@ function sharedConceptEdges(state: WorkspaceState, create: boolean): void {
           {
             source,
             target,
-            kind: "shared_concept",
-            label: "共同涉及概念",
+            kind,
+            label: kind === "shared_method" ? "共用研究方法" : "共同涉及概念",
             status: "candidate",
             origin: "source",
-            rationale: `双方原文均涉及“${label}”。此关系只表示共同主题，不表示论文之间存在引用、因果、支持或反驳关系，请核对双方原文。`,
+            rationale:
+              kind === "shared_method"
+                ? `两篇论文均使用“${label}”，双方原句与页码见来源。`
+                : `两篇论文均讨论“${label}”，双方原句与页码见来源。`,
             evidence,
           },
           conceptKey,
         );
-        if (changed) {
-          edge.stale = true;
+        if (changed && edge.status !== "rejected") {
+          edge.evidence = evidence;
+          edge.rationale =
+            kind === "shared_method"
+              ? `两篇论文均使用“${label}”，双方原句与页码见来源。`
+              : `两篇论文均讨论“${label}”，双方原句与页码见来源。`;
+          edge.status = "candidate";
+          edge.stale = false;
           edge.version++;
           edge.updatedAt = new Date().toISOString();
         }
       }
   }
   for (const edge of state.graph.edges) {
-    if (edge.kind === "shared_concept" && !active.has(edge.id) && !edge.stale) {
+    if (
+      ["shared_concept", "shared_method"].includes(edge.kind) &&
+      edge.origin === "source" &&
+      !active.has(edge.id) &&
+      !edge.stale
+    ) {
       edge.stale = true;
       edge.version++;
       edge.updatedAt = new Date().toISOString();
@@ -298,8 +400,7 @@ export async function suggestGraph(paperId?: string): Promise<ResearchGraph> {
             label: "涉及概念",
             status: "candidate",
             origin: "source",
-            rationale:
-              "通过原文中的概念名称及别名匹配得到；出现术语不代表验证该理论，请核对来源后确认。",
+            rationale: "原文中出现该概念名称或别名，匹配位置见来源。",
             evidence,
           });
       }
@@ -379,7 +480,7 @@ export async function applyGraphRun(run: ResearchRun): Promise<void> {
         label: labels[concept.relation],
         status: "candidate",
         origin: "ai",
-        rationale: "PaperFlow 从原文提取。请人工核对关系是否准确。",
+        rationale: "PaperFlow 从所列原句中提取。",
         evidence: [
           {
             paperId: paper.id,
@@ -390,6 +491,7 @@ export async function applyGraphRun(run: ResearchRun): Promise<void> {
         ],
       });
     }
+    sharedConceptEdges(state, true);
     state.actions[actionKey] = {
       kind: "graph",
       id: run.id,
@@ -412,11 +514,17 @@ export async function decideGraphEdge(
       throw new ResearchError("关系来源已移入回收站，请先恢复论文", 410);
     expectedVersion(edge.version, version);
     if (decision === "confirmed") {
-      if (edge.kind === "shared_concept" && edge.stale)
+      if (
+        (edge.kind === "shared_concept" ||
+          (edge.kind === "shared_method" && edge.origin === "source")) &&
+        edge.stale
+      )
         throw new ResearchError(
           "共同概念的来源已改变，请重新生成并核对双方原文",
           409,
         );
+      if (edge.stale)
+        throw new ResearchError("关系依据已改变，请重新生成并核对来源", 409);
       if (!edge.evidence.length)
         throw new ResearchError("没有来源证据，无法确认关系");
       for (const source of edge.evidence) {
@@ -471,8 +579,8 @@ export async function addManualGraphEdge(input: {
     return activeWorkspace(state).graph;
   });
 }
-export function graphStats() {
-  const graph = activeWorkspace().graph;
+export async function graphStats() {
+  const graph = (await activeWorkspace()).graph;
   return {
     nodes: graph.nodes.length,
     candidates: graph.edges.filter((e) => e.status === "candidate").length,

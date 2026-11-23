@@ -1,3 +1,5 @@
+import { RESEARCH_REPLY_STYLE } from "@/lib/research/reply-style";
+
 export const studyFrameworks = {
   cornell: {
     label: "康奈尔笔记",
@@ -6,9 +8,9 @@ export const studyFrameworks = {
     output: "问题线索、主要笔记、总结",
     action: "整理重点笔记",
     example:
-      "| 线索 / 问题 | 主要笔记 |\n| --- | --- |\n| 研究解决什么问题？ | …… [p.页码] |\n\n## 总结\n核心论点与局限：……",
+      "| 线索 / 问题 | 主要笔记 |\n| --- | --- |\n| 研究解决什么问题？ | …… [p.页码] |\n\n## 总结\n核心论点及其依据：……",
     instruction:
-      "先给出标题，然后用 Markdown 两列表格整理‘线索 / 问题’与‘主要笔记’，最后用‘## 总结’概括核心论点与局限。表格中的每条可核实主张附原文页码。",
+      "先给出标题，然后用 Markdown 两列表格整理‘线索 / 问题’与‘主要笔记’，最后用‘## 总结’概括核心论点及其依据。表格中的论文具体主张附真实原文页码。",
   },
   feynman: {
     label: "费曼解释",
@@ -17,9 +19,9 @@ export const studyFrameworks = {
     output: "一句话解释、类比、论文依据、待解问题",
     action: "生成通俗讲解",
     example:
-      "## 一句话理解\n……\n## 用一个类比解释\n理解类比（非论文证据）：……\n## 回到论文\n术语、依据与边界：…… [p.页码]\n## 我还需要弄懂什么\n……",
+      "## 一句话理解\n……\n## 用一个类比解释\n可以把它想成……\n## 回到论文\n术语与依据：…… [p.页码]\n## 我还需要弄懂什么\n……",
     instruction:
-      "使用‘## 一句话理解’‘## 用一个类比解释’‘## 回到论文’‘## 我还需要弄懂什么’四部分。类比明确标为帮助理解的类比，不可作为论文证据。保留关键英文术语，解释其含义与适用边界。",
+      "使用‘## 一句话理解’‘## 用一个类比解释’‘## 回到论文’‘## 我还需要弄懂什么’四部分。将类比作为帮助理解的例子，用自然措辞引入，再回到论文中的实际术语与原文依据。保留关键英文术语并解释其含义。",
   },
   recall: {
     label: "自测问答",
@@ -45,7 +47,8 @@ export function studyPrompt(framework: StudyFramework): string {
     studyFrameworks[framework].label +
     "。" +
     "如有选区，优先围绕选区；请区分作者结论、你的解释和未获支持的推断。" +
-    "关键陈述标注 [p.页码]，只引用本次实际可见的原文；资料不完整时说明覆盖范围。" +
+    "论文具体陈述标注真实 [p.页码]，只引用本次实际可见的原文。" +
+    RESEARCH_REPLY_STYLE +
     "不要调用写入工具，直接返回可编辑的 Markdown 草稿。\n" +
     studyFrameworks[framework].instruction
   );

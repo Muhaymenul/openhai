@@ -3,6 +3,7 @@
   [switch]$NoBrowser,
   [switch]$NonInteractive,
   [switch]$Background,
+  [switch]$WaitForManager,
   [switch]$ValidateOnly
 )
 
@@ -10,36 +11,20 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $manageScript = Join-Path $PSScriptRoot 'manage.ps1'
 $engine = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
-$workspaceUrl = $null
+$workspaceUrl = 'http://127.0.0.1:3000/workspace'
 $logDirectory = Join-Path $projectRoot 'runtime\launcher'
 
 function Get-LauncherArguments([string]$ScriptPath) {
   $arguments = @('-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass', '-File', ('"' + $ScriptPath + '"'), '-Action', $Action)
   if ($NoBrowser) { $arguments += '-NoBrowser' }
   if ($NonInteractive) { $arguments += '-NonInteractive' }
+  if ($WaitForManager) { $arguments += '-WaitForManager' }
   return $arguments
-}
-
-function Get-WorkspaceUrl {
-  $dockerCommand = Get-Command docker -ErrorAction SilentlyContinue
-  $docker = if ($dockerCommand) { $dockerCommand.Source } else {
-    @(
-      (Join-Path $env:LOCALAPPDATA 'Programs\DockerDesktop\resources\bin\docker.exe'),
-      (Join-Path $env:ProgramFiles 'Docker\Docker\resources\bin\docker.exe')
-    ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
-  }
-  if (!$docker) { throw 'Docker with Compose v2 is required.' }
-  $configurationText = (& $docker compose --project-directory $projectRoot config --format json | Out-String)
-  if ($LASTEXITCODE -ne 0) { throw 'Unable to read this project''s Compose settings.' }
-  $configuration = $configurationText | ConvertFrom-Json
-  $port = [int]$configuration.services.web.ports[0].published
-  if ($port -lt 1 -or $port -gt 65535) { throw 'RESEARCH_WEB_PORT must be between 1 and 65535.' }
-  return ('http://127.0.0.1:' + $port + '/workspace')
 }
 
 function Test-WorkspaceReady {
   try {
-    $response = Invoke-WebRequest -Uri ($workspaceUrl.Replace('/workspace', '/api/research')) -UseBasicParsing -TimeoutSec 3
+    $response = Invoke-WebRequest -Uri 'http://127.0.0.1:3000/api/research' -UseBasicParsing -TimeoutSec 3
     if ($response.StatusCode -ne 200) { return $false }
     $payload = $response.Content | ConvertFrom-Json
     return ($null -ne $payload -and $payload.PSObject.Properties.Name -contains 'papers' -and $payload.PSObject.Properties.Name -contains 'notes' -and $payload.PSObject.Properties.Name -contains 'graph')
@@ -69,7 +54,7 @@ if ($ValidateOnly) {
     engineExists = Test-Path -LiteralPath $engine -PathType Leaf
     managerExists = Test-Path -LiteralPath $manageScript -PathType Leaf
     windowStyle = 'Hidden'
-    url = Get-WorkspaceUrl
+    url = $workspaceUrl
     logDirectory = $logDirectory
   } | ConvertTo-Json -Depth 3
   exit 0
@@ -98,14 +83,15 @@ try {
   $hash = [Security.Cryptography.SHA256]::Create()
   try { $projectKey = [BitConverter]::ToString($hash.ComputeHash([Text.Encoding]::UTF8.GetBytes($projectRoot.ToLowerInvariant()))).Replace('-', '').Substring(0, 24) }
   finally { $hash.Dispose() }
-  $mutex = [Threading.Mutex]::new($false, ('Local\OpenhaiJiaoyanLauncher-' + $projectKey))
+  $mutex = [Threading.Mutex]::new($false, ('Local\JiaoyanLauncher-' + $projectKey))
   try { $acquired = $mutex.WaitOne(120000) }
   catch [Threading.AbandonedMutexException] { $acquired = $true }
   if (!$acquired) { throw 'The previous launch operation is still running. Please retry shortly.' }
   Write-LauncherLog ('Action: ' + $Action)
 
-  # Always address this Compose project. An unrelated app or the old demo may
-  # already answer on the same browser port.
+  if ($Action -eq 'start' -and !$WaitForManager -and !(Test-Path -LiteralPath (Join-Path $projectRoot '.portable-project.json')) -and (Test-WorkspaceReady)) {
+    Write-LauncherLog 'The workspace is already ready. No Docker operation was required.'
+  } else {
     $outputFile = $logFile + '.output.txt'
     $errorFile = $logFile + '.error.txt'
     $arguments = @('-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', ('"' + $manageScript + '"'), '-Action', $Action, '-NoBrowser')
@@ -114,9 +100,13 @@ try {
       # Docker Desktop remains running after the manager exits. Wait only for
       # the manager, rather than its complete process tree or inherited output.
       $null = $operation.Handle
-      $deadline = [DateTime]::UtcNow.AddMinutes(30)
+      $deadline = [DateTime]::UtcNow.AddMinutes(5)
       while (!$operation.WaitForExit(500)) {
-        if ([DateTime]::UtcNow -ge $deadline) { throw 'The project manager did not finish within thirty minutes.' }
+        if ([DateTime]::UtcNow -ge $deadline) {
+          if (!$WaitForManager) { throw 'The project manager did not finish within five minutes.' }
+          Write-LauncherLog 'The manager is still active. Keeping the operation lock until it finishes.'
+          $deadline=[DateTime]::UtcNow.AddMinutes(5)
+        }
       }
       $managerExitCode = $operation.ExitCode
     } finally { $operation.Dispose() }
@@ -127,10 +117,8 @@ try {
       }
     }
     if ($managerExitCode -ne 0) { throw ('The project manager returned exit code ' + $managerExitCode + '.') }
-    if ($Action -eq 'start') {
-      $workspaceUrl = Get-WorkspaceUrl
-      if (!(Test-WorkspaceReady)) { throw 'The workspace did not respond after startup.' }
-    }
+    if ($Action -eq 'start' -and !(Test-WorkspaceReady)) { throw 'The workspace did not respond after startup.' }
+  }
 
   if ($Action -eq 'start' -and !$NoBrowser) {
     # Opening the browser is the requested interactive output, not a background helper.

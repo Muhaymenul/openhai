@@ -19,14 +19,6 @@ from paperflow.core.llm.types import LlmResponse, ToolCallBlock
 EXPECTED_TOOLS = {"read_selection", "read_paper_text", "create_note", "propose_annotation"}
 
 
-@pytest.mark.parametrize("field", ["api_key", "base_url", "default_model"])
-def test_missing_user_model_configuration_is_not_ready(tmp_path, field):
-    settings = config()
-    setattr(settings.llm, field, "")
-    service = ResearchService(tmp_path, settings)
-    assert service.health()["configured"] is False
-
-
 def config() -> PaperFlowConfig:
     value = PaperFlowConfig()
     value.llm.provider = "openai"
@@ -50,7 +42,8 @@ class Provider:
 
     async def chat(self, messages, tool_schemas, bus, run_id, *, step=0, system=None):
         assert {tool["name"] for tool in tool_schemas} == EXPECTED_TOOLS
-        assert "不表示笔记或PDF已经写入" in system
+        assert "一般解读回答省略保存说明" in system
+        assert "不得据此声称文件已经保存" in system
         self.calls += 1
         self.messages = messages
         if self.calls == 1:

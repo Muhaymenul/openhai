@@ -6,6 +6,7 @@ import {
   ArrowUpRight,
   CircleAlert,
   GraduationCap,
+  Brain,
   Library,
   Menu,
   Network,
@@ -28,6 +29,7 @@ import {
   type WorkspaceSnapshot,
 } from "./api";
 import { ResearchGraph } from "./ResearchGraph";
+import { ResearchMemory } from "./memory/ResearchMemory";
 import { ResearchKnowledge } from "./ResearchKnowledge";
 import { ResearchNotes } from "./ResearchNotes";
 import { ResearchReader, type ReaderJump } from "./ResearchReader";
@@ -51,12 +53,14 @@ type View =
   | "review"
   | "education"
   | "search"
+  | "memory"
   | "graph"
   | "tasks"
   | "help";
 const NAV = [
   { id: "library", label: "文献库", icon: Library },
   { id: "notes", label: "研究笔记", icon: NotebookPen },
+  { id: "memory", label: "研究记忆", icon: Brain },
   { id: "review", label: "学习复习", icon: ListChecks },
   { id: "education", label: "教育概念库", icon: GraduationCap },
   { id: "search", label: "个人检索", icon: Search },
@@ -156,6 +160,7 @@ export function ResearchWorkspace() {
           "education",
           "search",
           "graph",
+          "memory",
           "tasks",
           "help",
         ].includes(initialView)
@@ -206,14 +211,23 @@ export function ResearchWorkspace() {
       window.removeEventListener("popstate", hydrateLocation);
     };
   }, []);
-  const navigate = useCallback((next: View) => {
-    if (next === "notes") setNoteTarget(null);
-    if (next === "review")
-      setReviewTarget({ nonce: ++navigationNonce.current });
-    setView(next);
-    setMenuOpen(false);
-    window.history.replaceState(null, "", "/workspace?view=" + next);
-  }, []);
+  const navigate = useCallback(
+    (next: View) => {
+      if (next === "notes") setNoteTarget(null);
+      if (next === "review")
+        setReviewTarget({ nonce: ++navigationNonce.current });
+      setView(next);
+      setMenuOpen(false);
+      window.history.replaceState(null, "", "/workspace?view=" + next);
+      // Annotation writes refresh the active paper only. Reconcile the library
+      // and graph once when leaving the reader, outside the selection hot path.
+      if (view === "reader" && next !== "reader")
+        void refresh().catch((cause: unknown) =>
+          notify(errorText(cause), true),
+        );
+    },
+    [view, refresh, notify],
+  );
   const openSource = useCallback(
     (source: SourceRef) => {
       if (source.url && !source.paperId) {
@@ -749,9 +763,17 @@ export function ResearchWorkspace() {
                   onOpenSource={openSource}
                 />
               )}
+              {view === "memory" && (
+                <ResearchMemory
+                  papers={snapshot.papers}
+                  onOpenSource={openSource}
+                  notify={notify}
+                />
+              )}
               {view === "graph" && (
                 <ResearchGraph
                   graph={snapshot.graph}
+                  papers={snapshot.papers}
                   onRefresh={refresh}
                   onOpenSource={openSource}
                   notify={notify}

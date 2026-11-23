@@ -491,7 +491,7 @@ describe("public share boundaries", () => {
     expect(html).toContain("Why does attention help?");
     expect(html).toContain('aria-label="上一页"');
     expect(html).toContain('aria-label="放大"');
-    expect(html).not.toContain('aria-label="保存批注"');
+    expect(html).not.toContain('aria-label="立即保存 PDF 批注"');
     expect(html).not.toContain("<form");
     expect(html).not.toContain("<textarea");
     expect(html).not.toContain("Create share");

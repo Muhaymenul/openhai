@@ -4,6 +4,6 @@ ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 COPY paperflow ./paperflow
 COPY requirements.lock ./requirements.lock
 RUN pip install --no-cache-dir -r requirements.lock && pip install --no-cache-dir --no-deps ./paperflow
-COPY research_service.py research_context.py ./
+COPY research_service.py research_context.py research_purge.py research_metadata.py research_discovery.py ./
 EXPOSE 17437
 CMD ["python", "research_service.py", "--host", "0.0.0.0", "--port", "17437", "--data-dir", "/runtime/research", "--env-file", "/private/model.env"]

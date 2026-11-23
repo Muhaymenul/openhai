@@ -93,6 +93,7 @@ class AnthropicProvider:
         *,
         step: int = 0,
         system: str | None = None,
+        max_tokens: int = 8192,
     ) -> LlmResponse:
         await bus.publish(
             LlmModelSelectedEvent(run_id=run_id, model=self._model, strategy="static", ts=_now())
@@ -114,7 +115,7 @@ class AnthropicProvider:
 
         kwargs: dict[str, object] = {
             "model": self._model,
-            "max_tokens": 8192,
+            "max_tokens": max_tokens,
             "system": system_blocks,
             "messages": messages,
         }

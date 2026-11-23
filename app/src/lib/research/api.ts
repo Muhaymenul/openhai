@@ -69,6 +69,9 @@ import { prepareQuestionInput } from "./discussion/input";
 import { effectiveAnswerStyle } from "./discussion/context";
 import { recordedRunPaperIds } from "./context-scope";
 import { handleReviewRequest } from "./review/api";
+import { handleMemoryRequest } from "./memory/api";
+import { handleRelationsRequest } from "./relations/api";
+import { identifyPaperMetadata } from "./metadata";
 import type { ResearchRun } from "./types";
 import {
   cancelResearchRun,
@@ -85,6 +88,7 @@ import {
   trashResearchPaper,
   withPaperLifecycle,
 } from "./paper-lifecycle";
+import { purgeResearchPaper, recoverResearchPurges } from "./paper-purge";
 
 const json = (body: unknown, status = 200, headers?: Record<string, string>) =>
   Response.json(body, {
@@ -141,15 +145,23 @@ export async function handleResearchRequest(
     const method = request.method;
     const [area, id, detail] = segments;
     const url = new URL(request.url);
+    if (area === "memory")
+      return await handleMemoryRequest(request, segments.slice(1));
+    if (area === "relations") {
+      const response = await handleRelationsRequest(request, segments.slice(1));
+      if (response) return response;
+      throw new ResearchError("文献关系操作不存在", 404);
+    }
     if (area === "review")
       return await handleReviewRequest(request, segments.slice(1));
     if (!area && method === "GET") {
       await withPaperLifecycle(async () => {
+        await recoverResearchPurges();
         await recoverResearchImports();
         await recoverAnnotations();
       });
-      const indexReady = ensureResearchIndex();
-      const state = activeWorkspace();
+      const indexReady = await ensureResearchIndex();
+      const state = await activeWorkspace();
       const graph = await getResearchGraph();
       const paperIds = new Set(state.papers.map((paper) => paper.id));
       const history = (await getResearchHistory(undefined, false)).filter(
@@ -169,7 +181,17 @@ export async function handleResearchRequest(
     if (area === "health" && method === "GET")
       return json({ health: await getResearchHealth() });
     if (area === "trash" && !id && method === "GET")
-      return json({ papers: listTrashedPapers() });
+      return json({ papers: await listTrashedPapers() });
+    if (area === "trash" && id && !detail && method === "DELETE") {
+      idSchema.parse(id);
+      const input = paperLifecycleSchema.parse(await body(request));
+      return json(
+        await purgeResearchPaper(
+          id,
+          versionFromRequest(request, input.version),
+        ),
+      );
+    }
     if (area === "examples" && id === "import" && method === "POST") {
       const dir = path.resolve(
         process.env.RESEARCH_EXAMPLES_DIR ||
@@ -199,7 +221,8 @@ export async function handleResearchRequest(
       return json({ papers }, 201);
     }
     if (area === "papers" && !id) {
-      if (method === "GET") return json({ papers: activeWorkspace().papers });
+      if (method === "GET")
+        return json({ papers: (await activeWorkspace()).papers });
       if (method === "POST") {
         const form = await request.formData();
         const parsed = z
@@ -222,6 +245,9 @@ export async function handleResearchRequest(
           });
         const bytes = new Uint8Array(await parsed.file.arrayBuffer());
         const extracted = await parsePdf(bytes);
+        const knownIds = new Set(
+          (await readWorkspace()).papers.map((paper) => paper.id),
+        );
         const paper = await importPaper({
           bytes,
           filename: parsed.file.name,
@@ -232,12 +258,30 @@ export async function handleResearchRequest(
             .filter(Boolean),
           ...extracted,
           title: parsed.title || extracted.title,
+          manualTitle: Boolean(parsed.title),
         });
-        return json({ paper }, 201, { etag: `"${paper.version}"` });
+        return json({ paper, imported: !knownIds.has(paper.id) }, 201, {
+          etag: `"${paper.version}"`,
+        });
       }
     }
     if (area === "papers" && id) {
       idSchema.parse(id);
+      if (detail === "metadata" && method === "POST") {
+        const input = z
+          .object({
+            version: z.number().int().positive().optional(),
+            retry: z.boolean().default(false),
+          })
+          .strict()
+          .parse(await body(request));
+        const result = await identifyPaperMetadata(
+          id,
+          versionFromRequest(request, input.version),
+          input.retry,
+        );
+        return json(result, 200, { etag: `"${result.paper.version}"` });
+      }
       if (
         (!detail && method === "DELETE") ||
         (detail === "restore" && method === "POST")
@@ -250,15 +294,15 @@ export async function handleResearchRequest(
             : await trashResearchPaper(id, version);
         return json({ paper: updated }, 200, { etag: `"${updated.version}"` });
       }
-      const paper = paperById(id);
+      const paper = await paperById(id);
       if (detail === "cover" && (method === "GET" || method === "HEAD"))
         return await researchCoverResponse(request, id);
       if (detail === "pdf") {
         if (method === "GET" || method === "HEAD")
-          return researchPdfResponse(request, id);
+          return await researchPdfResponse(request, id);
         if (method === "PUT") {
-          const saved = await withPaperLifecycle(() =>
-            saveResearchPdf(request, id),
+          const saved = await withPaperLifecycle(
+            async () => await saveResearchPdf(request, id),
           );
           return json(saved, 200, { etag: saved.etag });
         }
@@ -273,8 +317,8 @@ export async function handleResearchRequest(
           .string()
           .regex(/^"[a-f0-9]{64}"$/)
           .parse(request.headers.get("if-match"));
-        const saved = await withPaperLifecycle(() =>
-          saveNativeComment(id, action, expected),
+        const saved = await withPaperLifecycle(
+          async () => await saveNativeComment(id, action, expected),
         );
         return json(saved, 200, { etag: saved.etag });
       }
@@ -286,12 +330,12 @@ export async function handleResearchRequest(
         });
       if (detail === "annotations" && method === "GET")
         return json({
-          annotations: activeWorkspace().annotations.filter(
+          annotations: (await activeWorkspace()).annotations.filter(
             (a) => a.paperId === id,
           ),
         });
       if (!detail && method === "GET") {
-        const state = activeWorkspace();
+        const state = await activeWorkspace();
         return json(
           {
             paper,
@@ -319,7 +363,7 @@ export async function handleResearchRequest(
           .optional()
           .parse(url.searchParams.get("paperId") || undefined);
         return json({
-          notes: activeWorkspace().notes.filter(
+          notes: (await activeWorkspace()).notes.filter(
             (n) => !paperId || n.paperId === paperId,
           ),
         });
@@ -331,7 +375,7 @@ export async function handleResearchRequest(
         );
       if (id) {
         idSchema.parse(id);
-        const state = readWorkspace();
+        const state = await readWorkspace();
         const note = state.notes.find((n) => n.id === id);
         if (!note) throw new ResearchError("笔记不存在", 404);
         paperById(note.paperId, state);
@@ -353,20 +397,23 @@ export async function handleResearchRequest(
       idSchema.parse(id);
       const input = annotationMutationSchema.parse(await body(request));
       return json(
-        await withPaperLifecycle(() =>
-          mutateAnnotation(id, input, method === "DELETE"),
+        await withPaperLifecycle(
+          async () => await mutateAnnotation(id, input, method === "DELETE"),
         ),
       );
     }
     if (area === "annotations" && !id && method === "POST") {
       const input = annotationSchema.parse(await body(request));
-      return json(await withPaperLifecycle(() => createAnnotation(input)), 201);
+      return json(
+        await withPaperLifecycle(async () => await createAnnotation(input)),
+        201,
+      );
     }
     if (area === "annotations" && method === "GET")
-      return json({ annotations: activeWorkspace().annotations });
+      return json({ annotations: (await activeWorkspace()).annotations });
     if (area === "knowledge" || area === "concepts") {
       if (!id && method === "GET")
-        return json({ knowledge: activeWorkspace().knowledge });
+        return json({ knowledge: (await activeWorkspace()).knowledge });
       if (!id && method === "POST")
         return json(
           {
@@ -377,14 +424,18 @@ export async function handleResearchRequest(
           201,
         );
       if (id && method === "GET") {
-        const entry = activeWorkspace().knowledge.find((k) => k.id === id);
+        const entry = (await activeWorkspace()).knowledge.find(
+          (k) => k.id === id,
+        );
         if (!entry) throw new ResearchError("概念不存在", 404);
         return json({ entry });
       }
       if (id && method === "PATCH") {
         idSchema.parse(id);
         const input = knowledgePatchSchema.parse(await body(request));
-        const existing = readWorkspace().knowledge.find((k) => k.id === id);
+        const existing = (await readWorkspace()).knowledge.find(
+          (k) => k.id === id,
+        );
         if (!existing) throw new ResearchError("概念不存在", 404);
         return json({
           entry: await saveKnowledge(
@@ -408,7 +459,7 @@ export async function handleResearchRequest(
           q: url.searchParams.get("q") || "",
           scope: url.searchParams.get("scope") || "all",
         });
-      return json({ results: searchResearch(query.q, query.scope) });
+      return json({ results: await searchResearch(query.q, query.scope) });
     }
     if (area === "graph") {
       if (method === "GET") return json(await getResearchGraph());
@@ -443,9 +494,11 @@ export async function handleResearchRequest(
     if (area === "runs" || area === "tasks" || area === "history") {
       if (!id && method === "GET") {
         const paperId = url.searchParams.get("paperId") || undefined;
-        if (paperId) paperById(idSchema.parse(paperId));
+        if (paperId) await paperById(idSchema.parse(paperId));
         const history = await getResearchHistory(paperId);
-        const ids = new Set(activeWorkspace().papers.map((paper) => paper.id));
+        const ids = new Set(
+          (await activeWorkspace()).papers.map((paper) => paper.id),
+        );
         return json({ history: history.filter((run) => visibleRun(run, ids)) });
       }
       if (!id && method === "POST") {
@@ -457,7 +510,7 @@ export async function handleResearchRequest(
         )
           throw new ResearchError("来源选择用于问答，且必须包含当前论文");
         const run = await withPaperLifecycle(async () => {
-          const context = researchContext(
+          const context = await researchContext(
             input.paperId,
             input.mode === "graph" ? undefined : input.question,
             input.learning ? [input.paperId] : input.sourcePaperIds,
@@ -480,8 +533,8 @@ export async function handleResearchRequest(
               })),
             ];
           }
-          const prepared = prepareLearningInput(
-            prepareQuestionInput({ ...input, context }),
+          const prepared = await prepareLearningInput(
+            await prepareQuestionInput({ ...input, context }),
           );
           if (
             context.paper.textStatus !== "ready" &&
@@ -503,11 +556,11 @@ export async function handleResearchRequest(
           (run) => run.id === id,
         );
         if (!local) throw new ResearchError("分析记录不存在", 404);
-        paperById(local.paperId);
+        await paperById(local.paperId);
         if (
           !visibleRun(
             local,
-            new Set(activeWorkspace().papers.map((paper) => paper.id)),
+            new Set((await activeWorkspace()).papers.map((paper) => paper.id)),
           )
         )
           throw new ResearchError(
@@ -545,7 +598,7 @@ export async function handleResearchRequest(
     if (area === "settings") {
       if (method === "GET")
         return json({
-          settings: readWorkspace().settings,
+          settings: (await readWorkspace()).settings,
           health: await getResearchHealth().catch(() => ({ available: false })),
         });
       if (method === "PATCH") {
@@ -583,7 +636,7 @@ export async function handleResearchRequest(
           paperId: url.searchParams.get("paperId") || undefined,
           format: url.searchParams.get("format") || "markdown",
         });
-      return new Response(exportMarkdown(input.paperId), {
+      return new Response(await exportMarkdown(input.paperId), {
         headers: {
           "content-type": "text/markdown; charset=utf-8",
           "content-disposition": `attachment; filename="research-notes.md"; filename*=UTF-8''${encodeURIComponent("教研阅记-研究笔记.md")}`,

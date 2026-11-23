@@ -6,7 +6,7 @@ from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
 names = subprocess.check_output(['git', 'ls-files', '-z'], cwd=root).decode().split('\0')
-forbidden = {'node_modules', '.next', '.venv', '__pycache__'}
+forbidden = {'node_modules', '.next', '.venv', '__pycache__', '.local', '.cache', '.tools'}
 patterns = [re.compile(r'\bsk-[A-Za-z0-9]{24,}\b'), re.compile(r'\bgh[pousr]_[A-Za-z0-9]{30,}\b'), re.compile(r'\bgithub_pat_[A-Za-z0-9_]{40,}\b')]
 errors = []
 count = 0
@@ -16,8 +16,8 @@ for name in filter(None, names):
         continue
     count += 1
     parts = Path(name).parts
-    if (parts[0] in {'private', 'data', 'runtime', 'backups', 'tmp', 'reports'}
-        or name.startswith('services/runtime/')
+    if (parts[0] in {'private', 'data', 'runtime', 'backups', 'tmp', 'reports', 'database', 'tools'}
+        or name.startswith(('services/runtime/', 'desktop/dist/', 'docs/UI预览/')) or name == '.portable-project.json'
         or any(part in forbidden for part in parts) or path.name == 'provider.json'):
         errors.append(f'Private or generated path: {name}')
     if path.name.startswith('.env') and path.name != '.env.example':
@@ -34,7 +34,12 @@ for name in filter(None, names):
         if values.get('PAPERFLOW_LLM_API_KEY', '').strip():
             errors.append('Model key template must be empty')
 
-for required in ['README.md', 'docker-compose.yml', 'private.example.env', 'app/package-lock.json', 'app/Dockerfile.research', 'app/scripts/runtime/start-stack.sh', 'services/requirements.lock', 'services/paperflow/LICENSE', 'services/paperflow/src/paperflow/core/tools/base.py', 'docs/requirements/problem_definition.md', 'docs/algorithm/research.md']:
+    if path.name == 'private.postgres.example.env':
+        values = dict(line.split('=', 1) for line in text.splitlines() if '=' in line and not line.lstrip().startswith('#'))
+        if values.get('RESEARCH_DATABASE_PASSWORD', '').strip():
+            errors.append('Database password template must be empty')
+
+for required in ['README.md', 'docker-compose.yml', 'private.example.env', 'private.postgres.example.env', 'scripts/postgres.ps1', 'desktop/src/shutdown.cjs', 'app/package-lock.json', 'app/Dockerfile.research', 'app/scripts/runtime/start-stack.sh', 'services/requirements.lock', 'services/paperflow/LICENSE', 'services/paperflow/src/paperflow/core/tools/base.py', 'docs/requirements/problem_definition.md', 'docs/algorithm/research.md']:
     if not (root / required).is_file():
         errors.append(f'Missing required file: {required}')
 if errors:

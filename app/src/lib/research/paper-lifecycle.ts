@@ -25,9 +25,9 @@ export function withPaperLifecycle<T>(operation: () => Promise<T>): Promise<T> {
   );
 }
 
-export function listTrashedPapers(): ResearchPaper[] {
-  return readWorkspace()
-    .papers.filter((paper) => Boolean(paper.trashedAt))
+export async function listTrashedPapers(): Promise<ResearchPaper[]> {
+  return (await readWorkspace()).papers
+    .filter((paper) => Boolean(paper.trashedAt))
     .sort((a, b) => b.trashedAt!.localeCompare(a.trashedAt!));
 }
 
@@ -48,7 +48,9 @@ export async function trashResearchPaper(
 ): Promise<ResearchPaper> {
   safeId(id);
   return withPaperLifecycle(async () => {
-    const paper = readWorkspace().papers.find((value) => value.id === id);
+    const paper = (await readWorkspace()).papers.find(
+      (value) => value.id === id,
+    );
     if (!paper) throw new ResearchError("未找到论文", 404);
     expectedVersion(paper.version, version);
     if (paper.trashedAt) throw new ResearchError("论文已在回收站中", 410);

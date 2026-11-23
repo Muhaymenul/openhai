@@ -1,4 +1,4 @@
-param()
+﻿param()
 $ErrorActionPreference = 'Stop'
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 
@@ -8,7 +8,8 @@ foreach ($directory in @('data', 'runtime', 'private', 'backups')) {
 
 $templates = @(
   @{ source = '.env.example'; destination = '.env' },
-  @{ source = 'private.example.env'; destination = 'private\model.env' }
+  @{ source = 'private.example.env'; destination = 'private\model.env' },
+  @{ source = 'private.postgres.example.env'; destination = 'private\postgres.env' }
 )
 foreach ($template in $templates) {
   $destination = Join-Path $projectRoot $template.destination
@@ -19,3 +20,5 @@ foreach ($template in $templates) {
 }
 Write-Host 'Setup ready. Existing settings were preserved.'
 Write-Host 'For AI features, edit private/model.env with your own endpoint, model ID and API key.'
+
+Write-Host 'Configure your own PostgreSQL connection in private/postgres.env before starting. See docs/PostgreSQL部署.md.'

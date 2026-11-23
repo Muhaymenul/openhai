@@ -82,7 +82,7 @@ describe("persistent research workspace", () => {
     const current = await fixture("The primary paper studies feedback.");
     const selected = await fixture("A separate paper studies cities.");
     await fixture("This unselected paper must stay out.");
-    const context = researchContext(current.id, "zzzz-unmatched", [
+    const context = await researchContext(current.id, "zzzz-unmatched", [
       current.id,
       selected.id,
     ]);
@@ -91,12 +91,19 @@ describe("persistent research workspace", () => {
     ]);
     expect(context.related?.[0].pages[0].text).toContain("cities");
     expect(
-      researchContext(current.id, "Compare with other papers", [current.id])
-        .related,
+      (
+        await researchContext(current.id, "Compare with other papers", [
+          current.id,
+        ])
+      ).related,
     ).toEqual([]);
-    expect(() =>
-      researchContext(current.id, "query", [current.id, "unknown-paper"]),
-    ).toThrow("未找到论文");
+    await expect(
+      (async () =>
+        await researchContext(current.id, "query", [
+          current.id,
+          "unknown-paper",
+        ]))(),
+    ).rejects.toThrow("未找到论文");
   });
   it("allows immediate annotation after atomic import while retaining the unknown external-write guard", async () => {
     const paper = await fixture(
@@ -145,7 +152,7 @@ describe("persistent research workspace", () => {
       { action: "delete", id },
       nativeEdited.etag,
     );
-    expect(readWorkspace().annotations).toHaveLength(0);
+    expect((await readWorkspace()).annotations).toHaveLength(0);
     // A different writer's fresh bytes still require the normal quiet period.
     const external = await PDFDocument.load(
       fs.readFileSync(paperPdfPath(paper)),
@@ -175,7 +182,7 @@ describe("persistent research workspace", () => {
       ],
     });
     expect(
-      searchResearch("独特的个人反思词", "personal").some(
+      (await searchResearch("独特的个人反思词", "personal")).some(
         (r) => r.id === note.id,
       ),
     ).toBe(false);
@@ -185,16 +192,20 @@ describe("persistent research workspace", () => {
       body: "确认后的独特的个人反思词",
     });
     expect(
-      searchResearch("独特的个人反思词", "personal").some(
+      (await searchResearch("独特的个人反思词", "personal")).some(
         (r) => r.id === note.id,
       ),
     ).toBe(true);
     await expect(
       updateNote(note.id, { version: 1, body: "迟到的覆盖内容" }),
     ).rejects.toThrow("已被修改");
-    expect(readWorkspace().notes[0].body).toBe(confirmed.body);
-    expect(readWorkspace().noteHistory[note.id][0].body).toBe(note.body);
-    expect(exportMarkdown(paper.id)).toContain("确认后的独特的个人反思词");
+    expect((await readWorkspace()).notes[0].body).toBe(confirmed.body);
+    expect((await readWorkspace()).noteHistory[note.id][0].body).toBe(
+      note.body,
+    );
+    expect(await exportMarkdown(paper.id)).toContain(
+      "确认后的独特的个人反思词",
+    );
   });
   it("keeps rejected graph evidence rejected after rebuilding suggestions and rejects fabricated quotes", async () => {
     const paper = await fixture();
@@ -259,7 +270,7 @@ describe("persistent research workspace", () => {
     expect(contents).toContain("中文批注：反馈用于调整教学。");
     const retry = await createAnnotation(input);
     expect(retry.annotation.id).toBe(first.annotation.id);
-    expect(readWorkspace().annotations).toHaveLength(1);
+    expect((await readWorkspace()).annotations).toHaveLength(1);
     expect(fs.readFileSync(paperPdfPath(paper)).equals(bytes)).toBe(true);
   });
   it("edits and deletes all PDF parts of a research highlight, rejects stale writes and prevents deleted action replay", async () => {
@@ -319,7 +330,7 @@ describe("persistent research workspace", () => {
         ?.size(),
     ).toBe(0);
     await recoverAnnotations();
-    expect(readWorkspace().annotations).toHaveLength(0);
+    expect((await readWorkspace()).annotations).toHaveLength(0);
     await expect(createAnnotation(input)).rejects.toMatchObject({
       status: 410,
     });
@@ -331,7 +342,7 @@ describe("persistent research workspace", () => {
       { action: "create", page: 1, x: 40, y: 650, text: "原生评论" },
       paper.pdfEtag,
     );
-    const record = readWorkspace().annotations[0];
+    const record = (await readWorkspace()).annotations[0];
     expect(record.comment).toBe("原生评论");
     expect(record.pdfName).toMatch(/^papernook-/);
     const document = await PDFDocument.load(
@@ -344,15 +355,15 @@ describe("persistent research workspace", () => {
       { action: "edit", id, text: "编辑后的原生评论" },
       first.etag,
     );
-    expect(readWorkspace().annotations[0]).toMatchObject({
+    expect((await readWorkspace()).annotations[0]).toMatchObject({
       id: record.id,
       comment: "编辑后的原生评论",
       version: 2,
     });
     await saveNativeComment(paper.id, { action: "delete", id }, second.etag);
-    expect(readWorkspace().annotations).toHaveLength(0);
+    expect((await readWorkspace()).annotations).toHaveLength(0);
     await recoverAnnotations();
-    expect(readWorkspace().annotations).toHaveLength(0);
+    expect((await readWorkspace()).annotations).toHaveLength(0);
   });
   it("removes sidebar records when PDF.js saves a document with a comment deleted", async () => {
     const paper = await fixture();
@@ -377,10 +388,10 @@ describe("persistent research workspace", () => {
       }),
       paper.id,
     );
-    expect(readWorkspace().annotations).toHaveLength(0);
-    expect(readWorkspace().papers[0].pdfEtag).toBe(saved.etag);
+    expect((await readWorkspace()).annotations).toHaveLength(0);
+    expect((await readWorkspace()).papers[0].pdfEtag).toBe(saved.etag);
     await recoverAnnotations();
-    expect(readWorkspace().annotations).toHaveLength(0);
+    expect((await readWorkspace()).annotations).toHaveLength(0);
   });
   it("repairs the legacy highlight companion name and reconciles a PDF-side deletion after interruption", async () => {
     const paper = await fixture();
@@ -420,14 +431,16 @@ describe("persistent research workspace", () => {
         ?.size(),
     ).toBe(0);
     expect(
-      readWorkspace().annotations.some((a) => a.id === created.annotation.id),
+      (await readWorkspace()).annotations.some(
+        (a) => a.id === created.annotation.id,
+      ),
     ).toBe(false);
     const another = await createAnnotation(
       annotationSchema.parse({
         paperId: paper.id,
         page: 1,
         comment: "随后移除",
-        pdfEtag: readWorkspace().papers[0].pdfEtag,
+        pdfEtag: (await readWorkspace()).papers[0].pdfEtag,
       }),
     );
     const replacement = await PDFDocument.load(
@@ -437,7 +450,9 @@ describe("persistent research workspace", () => {
     fs.writeFileSync(paperPdfPath(paper), await replacement.save());
     await recoverAnnotations();
     expect(
-      readWorkspace().annotations.some((a) => a.id === another.annotation.id),
+      (await readWorkspace()).annotations.some(
+        (a) => a.id === another.annotation.id,
+      ),
     ).toBe(false);
   });
   it("connects three papers by shared source concepts, deduplicates pairs, preserves decisions and marks withdrawn evidence stale", async () => {

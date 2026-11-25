@@ -1,0 +1,527 @@
+▲ Next.js 16.4.3 (Turbopack)
+✓ Running next.config.ts took 681ms
+- Experiments (use with caution):
+  · proxyClientMaxBodySize: 104857600
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 19.4s
+  Running TypeScript ...
+  Finished TypeScript in 7.2s ...
+  Collecting page data using 15 workers ...
+[1;41;97m[tldraw][m [31;1mYou have multiple instances of some tldraw libraries active. This can lead to bugs and unexpected behavior. [m
+
+This usually means that your bundler is misconfigured, and is importing the same library multiple times - usually once as an ES Module, and once as a CommonJS module.
+
+The following libraries have been imported multiple times:
+  • ❌ [1m@tldraw/utils[m v5.5.2: 
+      1. ES Modules
+      2. ES Modules
+  • ❌ [1m@tldraw/validate[m v5.5.2: 
+      1. ES Modules
+      2. ES Modules
+  • ❌ [1m@tldraw/state[m v5.5.2: 
+      1. ES Modules
+      2. ES Modules
+  • ❌ [1m@tldraw/store[m v5.5.2: 
+      1. ES Modules
+      2. ES Modules
+  • ❌ [1m@tldraw/tlschema[m v5.5.2: 
+      1. ES Modules
+      2. ES Modules
+
+You should configure your bundler to only import one version of each library.
+[1;41;97m[tldraw][m [31;1mYou have multiple instances of some tldraw libraries active. This can lead to bugs and unexpected behavior. [m
+
+This usually means that your bundler is misconfigured, and is importing the same library multiple times - usually once as an ES Module, and once as a CommonJS module.
+
+The following libraries have been imported multiple times:
+  • ❌ [1m@tldraw/utils[m v5.5.2: 
+      1. ES Modules
+      2. ES Modules
+  • ❌ [1m@tldraw/validate[m v5.5.2: 
+      1. ES Modules
+      2. ES Modules
+  • ❌ [1m@tldraw/state[m v5.5.2: 
+      1. ES Modules
+      2. ES Modules
+  • ❌ [1m@tldraw/store[m v5.5.2: 
+      1. ES Modules
+      2. ES Modules
+  • ❌ [1m@tldraw/tlschema[m v5.5.2: 
+      1. ES Modules
+      2. ES Modules
+
+You should configure your bundler to only import one version of each library.
+[1;41;97m[tldraw][m [31;1mYou have multiple instances of some tldraw libraries active. This can lead to bugs and unexpected behavior. [m
+
+This usually means that your bundler is misconfigured, and is importing the same library multiple times - usually once as an ES Module, and once as a CommonJS module.
+
+The following libraries have been imported multiple times:
+  • ❌ [1m@tldraw/utils[m v5.5.2: 
+      1. ES Modules
+      2. ES Modules
+  • ❌ [1m@tldraw/validate[m v5.5.2: 
+      1. ES Modules
+      2. ES Modules
+  • ❌ [1m@tldraw/state[m v5.5.2: 
+      1. ES Modules
+      2. ES Modules
+  • ❌ [1m@tldraw/store[m v5.5.2: 
+      1. ES Modules
+      2. ES Modules
+  • ❌ [1m@tldraw/tlschema[m v5.5.2: 
+      1. ES Modules
+      2. ES Modules
+
+You should configure your bundler to only import one version of each library.
+  Generating static pages using 15 workers (0/12) ...
+  Generating static pages using 15 workers (3/12) 
+  Generating static pages using 15 workers (6/12) 
+  Generating static pages using 15 workers (9/12) 
+✓ Generating static pages using 15 workers (12/12) in 423ms
+Turbopack build encountered 10 warnings:
+./src/lib/library/papers.ts:564:8
+Warning: Dynamic filesystem access causes tracing of the whole project
+  [90m562 |[0m   [36mconst[0m fromDir = companionDir([36mnull[0m, slug);
+  [90m563 |[0m   [36mconst[0m fromPdf = pdfPath([36mnull[0m, slug);
+[33m[1m>[0m [90m564 |[0m   [36mif[0m (!fs.existsSync(fromDir) || !fs.existsSync(fromPdf)) {
+  [90m    |[0m        [33m[1m^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m565 |[0m     [36mthrow[0m [36mnew[0m [33mError[0m([32m`No inbox capture named "[0m${slug[32m}".`[0m);
+  [90m566 |[0m   }
+  [90m567 |[0m   [36mconst[0m toDir = companionDir(topic, slug);
+
+Static analysis determined that this filesystem access causes the whole project to be traced and included in the output.
+This is usually unintentional and leads to all source files (including the public folder) to be deployed as part of the server code.
+This can slow down deployments or lead to failures when size limits are exceeded.
+To resolve this, you can
+- make sure the path is statically scoped to some subfolder, for example path.join(process.cwd(), 'data', bar), or
+- only use them in development, or
+- opt out by adding an ignore comment to the highlighted call: fs.existsSync(/*turbopackIgnore: true*/ ...), or
+- remove them.
+
+Import traces:
+  #1 [App Route]:
+    ./src/lib/library/papers.ts
+    ./src/app/add/confirm/route.ts
+
+  #2 [App Route]:
+    ./src/lib/library/papers.ts
+    ./src/lib/data-dir.ts
+    ./src/app/api/v1/agent/metrics/route.ts
+
+  #3 [Instrumentation]:
+    ./src/lib/library/papers.ts
+    ./src/lib/sharing/worker.ts
+    ./src/instrumentation.ts
+
+  #4 [Server Component]:
+    ./src/lib/library/papers.ts
+    ./src/components/library/LibraryView.tsx
+    ./src/app/page.tsx
+
+
+./src/lib/library/papers.ts:175:7
+Warning: Dynamic filesystem access causes tracing of the whole project
+  [90m173 |[0m   [36mtry[0m {
+  [90m174 |[0m     [36mconst[0m value: unknown = [33mJSON[0m.parse(
+[33m[1m>[0m [90m175 |[0m       fs.readFileSync(path.join(companionDir(topic, slug), filename), [32m"utf8"[0m),
+  [90m    |[0m       [33m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m176 |[0m     );
+  [90m177 |[0m     [36mif[0m (
+  [90m178 |[0m       !value ||
+
+Static analysis determined that this filesystem access causes the whole project to be traced and included in the output.
+This is usually unintentional and leads to all source files (including the public folder) to be deployed as part of the server code.
+This can slow down deployments or lead to failures when size limits are exceeded.
+To resolve this, you can
+- make sure the path is statically scoped to some subfolder, for example path.join(process.cwd(), 'data', bar), or
+- only use them in development, or
+- opt out by adding an ignore comment to the highlighted call: fs.readFileSync(/*turbopackIgnore: true*/ ...), or
+- remove them.
+
+Import traces:
+  #1 [App Route]:
+    ./src/lib/library/papers.ts
+    ./src/app/add/confirm/route.ts
+
+  #2 [App Route]:
+    ./src/lib/library/papers.ts
+    ./src/lib/data-dir.ts
+    ./src/app/api/v1/agent/metrics/route.ts
+
+  #3 [Instrumentation]:
+    ./src/lib/library/papers.ts
+    ./src/lib/sharing/worker.ts
+    ./src/instrumentation.ts
+
+  #4 [Server Component]:
+    ./src/lib/library/papers.ts
+    ./src/components/library/LibraryView.tsx
+    ./src/app/page.tsx
+
+
+./src/lib/library/papers.ts:175:23
+Warning: Dynamic filesystem access causes tracing of the whole project
+  [90m173 |[0m   [36mtry[0m {
+  [90m174 |[0m     [36mconst[0m value: unknown = [33mJSON[0m.parse(
+[33m[1m>[0m [90m175 |[0m       fs.readFileSync(path.join(companionDir(topic, slug), filename), [32m"utf8"[0m),
+  [90m    |[0m                       [33m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m176 |[0m     );
+  [90m177 |[0m     [36mif[0m (
+  [90m178 |[0m       !value ||
+
+Static analysis determined that this filesystem access causes the whole project to be traced and included in the output.
+This is usually unintentional and leads to all source files (including the public folder) to be deployed as part of the server code.
+This can slow down deployments or lead to failures when size limits are exceeded.
+To resolve this, you can
+- make sure the path is statically scoped to some subfolder, for example path.join(process.cwd(), 'data', bar), or
+- only use them in development, or
+- opt out by adding an ignore comment to the highlighted call: path.join(/*turbopackIgnore: true*/ ...), or
+- remove them.
+
+Import traces:
+  #1 [App Route]:
+    ./src/lib/library/papers.ts
+    ./src/app/add/confirm/route.ts
+
+  #2 [App Route]:
+    ./src/lib/library/papers.ts
+    ./src/lib/data-dir.ts
+    ./src/app/api/v1/agent/metrics/route.ts
+
+  #3 [Instrumentation]:
+    ./src/lib/library/papers.ts
+    ./src/lib/sharing/worker.ts
+    ./src/instrumentation.ts
+
+  #4 [Server Component]:
+    ./src/lib/library/papers.ts
+    ./src/components/library/LibraryView.tsx
+    ./src/app/page.tsx
+
+
+./src/lib/research/api-routes.ts:125:8
+Warning: Dynamic filesystem access causes tracing of the whole project
+  [90m123 |[0m       path.join(process.cwd(), [32m".."[0m, [32m"examples"[0m),
+  [90m124 |[0m   );
+[33m[1m>[0m [90m125 |[0m   [36mif[0m (!fs.existsSync(dir))
+  [90m    |[0m        [33m[1m^^^^^^^^^^^^^^^^^^[0m
+  [90m126 |[0m     [36mthrow[0m [36mnew[0m [33mResearchError[0m([32m"样例目录尚未准备，请上传自己的PDF"[0m, [35m404[0m);
+  [90m127 |[0m   [36mconst[0m files = fs
+  [90m128 |[0m     .readdirSync(dir)
+
+Static analysis determined that this filesystem access causes the whole project to be traced and included in the output.
+This is usually unintentional and leads to all source files (including the public folder) to be deployed as part of the server code.
+This can slow down deployments or lead to failures when size limits are exceeded.
+To resolve this, you can
+- make sure the path is statically scoped to some subfolder, for example path.join(process.cwd(), 'data', bar), or
+- only use them in development, or
+- opt out by adding an ignore comment to the highlighted call: fs.existsSync(/*turbopackIgnore: true*/ ...), or
+- remove them.
+
+Import traces:
+  #1 [App Route]:
+    ./src/lib/research/api-routes.ts
+    ./src/lib/library/papers.ts
+    ./src/app/api/v1/papers/review/route.ts
+
+  #2 [App Route]:
+    ./src/lib/research/api-routes.ts
+    ./src/lib/research/api.ts
+    ./src/app/api/research/[...path]/route.ts
+
+
+./src/lib/research/api-routes.ts:135:34
+Warning: Dynamic filesystem access causes tracing of the whole project
+  [90m133 |[0m     [36mconst[0m full = path.join(dir, filename);
+  [90m134 |[0m     [36mif[0m (!fs.lstatSync(full).isFile()) [36mcontinue[0m;
+[33m[1m>[0m [90m135 |[0m     [36mconst[0m bytes = [36mnew[0m [33mUint8Array[0m(fs.readFileSync(full));
+  [90m    |[0m                                  [33m[1m^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m136 |[0m     [36mconst[0m parsed = [36mawait[0m parsePdf(bytes);
+  [90m137 |[0m     papers.push(
+  [90m138 |[0m       [36mawait[0m importPaper({
+
+Static analysis determined that this filesystem access causes the whole project to be traced and included in the output.
+This is usually unintentional and leads to all source files (including the public folder) to be deployed as part of the server code.
+This can slow down deployments or lead to failures when size limits are exceeded.
+To resolve this, you can
+- make sure the path is statically scoped to some subfolder, for example path.join(process.cwd(), 'data', bar), or
+- only use them in development, or
+- opt out by adding an ignore comment to the highlighted call: fs.readFileSync(/*turbopackIgnore: true*/ ...), or
+- remove them.
+
+Import traces:
+  #1 [App Route]:
+    ./src/lib/research/api-routes.ts
+    ./src/lib/library/papers.ts
+    ./src/app/api/v1/papers/review/route.ts
+
+  #2 [App Route]:
+    ./src/lib/research/api-routes.ts
+    ./src/lib/research/api.ts
+    ./src/app/api/research/[...path]/route.ts
+
+
+./src/lib/research/api-routes.ts:127:17
+Warning: Dynamic filesystem access causes tracing of the whole project
+  [90m125 |[0m   [36mif[0m (!fs.existsSync(dir))
+  [90m126 |[0m     [36mthrow[0m [36mnew[0m [33mResearchError[0m([32m"样例目录尚未准备，请上传自己的PDF"[0m, [35m404[0m);
+[33m[1m>[0m [90m127 |[0m   [36mconst[0m files = fs
+  [90m    |[0m                 [33m[1m^[0m
+[33m[1m>[0m [90m128 |[0m     .readdirSync(dir)
+  [90m    |[0m [33m[1m^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m129 |[0m     .filter((name) => name.toLowerCase().endsWith([32m".pdf"[0m))
+  [90m130 |[0m     .slice([35m0[0m, [35m10[0m);
+  [90m131 |[0m   [36mconst[0m papers = [];
+
+Static analysis determined that this filesystem access causes the whole project to be traced and included in the output.
+This is usually unintentional and leads to all source files (including the public folder) to be deployed as part of the server code.
+This can slow down deployments or lead to failures when size limits are exceeded.
+To resolve this, you can
+- make sure the path is statically scoped to some subfolder, for example path.join(process.cwd(), 'data', bar), or
+- only use them in development, or
+- opt out by adding an ignore comment to the highlighted call: fs.readdir(/*turbopackIgnore: true*/ ...), or
+- remove them.
+
+Import traces:
+  #1 [App Route]:
+    ./src/lib/research/api-routes.ts
+    ./src/lib/library/papers.ts
+    ./src/app/api/v1/papers/review/route.ts
+
+  #2 [App Route]:
+    ./src/lib/research/api-routes.ts
+    ./src/lib/research/api.ts
+    ./src/app/api/research/[...path]/route.ts
+
+
+./src/lib/research/api-routes.ts:133:18
+Warning: Dynamic filesystem access causes tracing of the whole project
+  [90m131 |[0m   [36mconst[0m papers = [];
+  [90m132 |[0m   [36mfor[0m ([36mconst[0m filename [36mof[0m files) {
+[33m[1m>[0m [90m133 |[0m     [36mconst[0m full = path.join(dir, filename);
+  [90m    |[0m                  [33m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m134 |[0m     [36mif[0m (!fs.lstatSync(full).isFile()) [36mcontinue[0m;
+  [90m135 |[0m     [36mconst[0m bytes = [36mnew[0m [33mUint8Array[0m(fs.readFileSync(full));
+  [90m136 |[0m     [36mconst[0m parsed = [36mawait[0m parsePdf(bytes);
+
+Static analysis determined that this filesystem access causes the whole project to be traced and included in the output.
+This is usually unintentional and leads to all source files (including the public folder) to be deployed as part of the server code.
+This can slow down deployments or lead to failures when size limits are exceeded.
+To resolve this, you can
+- make sure the path is statically scoped to some subfolder, for example path.join(process.cwd(), 'data', bar), or
+- only use them in development, or
+- opt out by adding an ignore comment to the highlighted call: path.join(/*turbopackIgnore: true*/ ...), or
+- remove them.
+
+Import traces:
+  #1 [App Route]:
+    ./src/lib/research/api-routes.ts
+    ./src/lib/library/papers.ts
+    ./src/app/api/v1/papers/review/route.ts
+
+  #2 [App Route]:
+    ./src/lib/research/api-routes.ts
+    ./src/lib/research/api.ts
+    ./src/app/api/research/[...path]/route.ts
+
+
+./src/lib/research/api-routes.ts:121:15
+Warning: Dynamic filesystem access causes tracing of the whole project
+  [90m119 |[0m
+  [90m120 |[0m [36masync[0m [36mfunction[0m handleExamplesImport() {
+[33m[1m>[0m [90m121 |[0m   [36mconst[0m dir = path.resolve(
+  [90m    |[0m               [33m[1m^^^^^^^^^^^^[0m
+[33m[1m>[0m [90m122 |[0m     process.env.[33mRESEARCH_EXAMPLES_DIR[0m ||
+  [90m    |[0m [33m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[33m[1m>[0m [90m123 |[0m       path.join(process.cwd(), [32m".."[0m, [32m"examples"[0m),
+  [90m    |[0m [33m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[33m[1m>[0m [90m124 |[0m   );
+  [90m    |[0m [33m[1m^^^[0m
+  [90m125 |[0m   [36mif[0m (!fs.existsSync(dir))
+  [90m126 |[0m     [36mthrow[0m [36mnew[0m [33mResearchError[0m([32m"样例目录尚未准备，请上传自己的PDF"[0m, [35m404[0m);
+  [90m127 |[0m   [36mconst[0m files = fs
+
+Static analysis determined that this filesystem access causes the whole project to be traced and included in the output.
+This is usually unintentional and leads to all source files (including the public folder) to be deployed as part of the server code.
+This can slow down deployments or lead to failures when size limits are exceeded.
+To resolve this, you can
+- make sure the path is statically scoped to some subfolder, for example path.join(process.cwd(), 'data', bar), or
+- only use them in development, or
+- opt out by adding an ignore comment to the highlighted call: path.resolve(/*turbopackIgnore: true*/ ...), or
+- remove them.
+
+Import traces:
+  #1 [App Route]:
+    ./src/lib/research/api-routes.ts
+    ./src/lib/library/papers.ts
+    ./src/app/api/v1/papers/review/route.ts
+
+  #2 [App Route]:
+    ./src/lib/research/api-routes.ts
+    ./src/lib/research/api.ts
+    ./src/app/api/research/[...path]/route.ts
+
+
+./src/lib/research/backup.ts:101:9
+Warning: Dynamic filesystem access causes tracing of the whole project
+  [90m 99 |[0m       add(
+  [90m100 |[0m         [32m`library/[0m${paper.library.topic[32m}/[0m${paper.library.slug[32m}/[0m${file[32m}`[0m,
+[33m[1m>[0m [90m101 |[0m         path.join(dir, file),
+  [90m    |[0m         [33m[1m^^^^^^^^^^^^^^^^^^^^[0m
+  [90m102 |[0m       );
+  [90m103 |[0m   }
+  [90m104 |[0m   [36mconst[0m runs = path.join(getResearchDataDir(), [32m"runs"[0m);
+
+Static analysis determined that this filesystem access causes the whole project to be traced and included in the output.
+This is usually unintentional and leads to all source files (including the public folder) to be deployed as part of the server code.
+This can slow down deployments or lead to failures when size limits are exceeded.
+To resolve this, you can
+- make sure the path is statically scoped to some subfolder, for example path.join(process.cwd(), 'data', bar), or
+- only use them in development, or
+- opt out by adding an ignore comment to the highlighted call: path.join(/*turbopackIgnore: true*/ ...), or
+- remove them.
+
+Import traces:
+  #1 [App Route]:
+    ./src/lib/research/backup.ts
+    ./src/lib/library/papers.ts
+    ./src/app/api/v1/papers/review/route.ts
+
+  #2 [App Route]:
+    ./src/lib/research/backup.ts
+    ./src/lib/research/api-routes.ts
+    ./src/lib/research/api.ts
+    ./src/app/api/research/[...path]/route.ts
+
+
+./src/lib/research/store.ts:62:10
+Warning: Dynamic filesystem access causes tracing of the whole project
+  [90m60 |[0m }
+  [90m61 |[0m [36mexport[0m [36mfunction[0m getResearchDataDir(): string {
+[33m[1m>[0m [90m62 |[0m   [36mreturn[0m path.resolve(
+  [90m   |[0m          [33m[1m^^^^^^^^^^^^[0m
+[33m[1m>[0m [90m63 |[0m     process.env.[33mRESEARCH_DATA_DIR[0m ||
+  [90m   |[0m [33m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[33m[1m>[0m [90m64 |[0m       path.join(process.cwd(), [32m"data"[0m, [32m"research"[0m),
+  [90m   |[0m [33m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[33m[1m>[0m [90m65 |[0m   );
+  [90m   |[0m [33m[1m^^^[0m
+  [90m66 |[0m }
+  [90m67 |[0m [36mexport[0m [36mfunction[0m atomicWrite(
+  [90m68 |[0m   filename: string,
+
+Static analysis determined that this filesystem access causes the whole project to be traced and included in the output.
+This is usually unintentional and leads to all source files (including the public folder) to be deployed as part of the server code.
+This can slow down deployments or lead to failures when size limits are exceeded.
+To resolve this, you can
+- make sure the path is statically scoped to some subfolder, for example path.join(process.cwd(), 'data', bar), or
+- only use them in development, or
+- opt out by adding an ignore comment to the highlighted call: path.resolve(/*turbopackIgnore: true*/ ...), or
+- remove them.
+
+Import traces:
+  #1 [App Route]:
+    ./src/lib/research/store.ts
+    ./src/lib/library/papers.ts
+    ./src/app/api/v1/papers/review/route.ts
+
+  #2 [App Route]:
+    ./src/lib/research/store.ts
+    ./src/lib/research/api.ts
+    ./src/app/api/research/route.ts
+
+
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ƒ /_not-found
+├ ƒ /add
+├ ƒ /add/confirm
+├ ƒ /add/status
+├ ƒ /api/research
+├ ƒ /api/research/[...path]
+├ ƒ /api/research/planner
+├ ƒ /api/research/planner/[...path]
+├ ƒ /api/v1/access/[action]
+├ ƒ /api/v1/agent/metrics
+├ ƒ /api/v1/agent/model
+├ ƒ /api/v1/agent/status
+├ ƒ /api/v1/agent/test
+├ ƒ /api/v1/capture
+├ ƒ /api/v1/citations
+├ ƒ /api/v1/citations/match
+├ ƒ /api/v1/citations/resolve
+├ ƒ /api/v1/client-logs
+├ ƒ /api/v1/conversations
+├ ƒ /api/v1/conversations/[id]
+├ ƒ /api/v1/conversations/[id]/chats
+├ ƒ /api/v1/conversations/[id]/export
+├ ƒ /api/v1/conversations/[id]/images/[imageName]
+├ ƒ /api/v1/discover
+├ ƒ /api/v1/graph
+├ ƒ /api/v1/health
+├ ƒ /api/v1/inbox/[slug]
+├ ƒ /api/v1/offline/conversations/[id]
+├ ƒ /api/v1/offline/papers/[topic]/[slug]
+├ ƒ /api/v1/papers/[topic]/[slug]/bibliography
+├ ƒ /api/v1/papers/[topic]/[slug]/canvas
+├ ƒ /api/v1/papers/[topic]/[slug]/canvas/assets
+├ ƒ /api/v1/papers/[topic]/[slug]/canvas/assets/[asset]
+├ ƒ /api/v1/papers/[topic]/[slug]/chats
+├ ƒ /api/v1/papers/[topic]/[slug]/chats/[chatId]
+├ ƒ /api/v1/papers/[topic]/[slug]/citation
+├ ƒ /api/v1/papers/[topic]/[slug]/collaboration
+├ ƒ /api/v1/papers/[topic]/[slug]/comments
+├ ƒ /api/v1/papers/[topic]/[slug]/exercises
+├ ƒ /api/v1/papers/[topic]/[slug]/exercises/pdf
+├ ƒ /api/v1/papers/[topic]/[slug]/expand
+├ ƒ /api/v1/papers/[topic]/[slug]/pdf
+├ ƒ /api/v1/papers/[topic]/[slug]/position
+├ ƒ /api/v1/papers/[topic]/[slug]/shares
+├ ƒ /api/v1/papers/[topic]/[slug]/shares/[shareId]
+├ ƒ /api/v1/papers/[topic]/[slug]/shares/[shareId]/participants
+├ ƒ /api/v1/papers/review
+├ ƒ /api/v1/profiles
+├ ƒ /api/v1/profiles/[username]
+├ ƒ /api/v1/reading-list
+├ ƒ /api/v1/session
+├ ƒ /api/v1/session/wizard-done
+├ ƒ /api/v1/settings/canvas
+├ ƒ /api/v1/settings/credentials
+├ ƒ /api/v1/settings/zotero
+├ ƒ /api/v1/settings/zotero/items
+├ ƒ /api/v1/shares/[topic]/[slug]/[shareId]/artifacts
+├ ƒ /api/v1/shares/[topic]/[slug]/[shareId]/exchange
+├ ƒ /api/v1/shares/[topic]/[slug]/[shareId]/images/[imageName]
+├ ƒ /api/v1/shares/[topic]/[slug]/[shareId]/pdf
+├ ƒ /api/v1/shares/import
+├ ƒ /api/v1/shortcut
+├ ƒ /api/v1/viewer/pdf
+├ ○ /apple-icon.png
+├ ƒ /conversations
+├ ƒ /conversations/[id]
+├ ƒ /discover
+├ ƒ /graph
+├ ○ /icon.svg
+├ ƒ /inbox/[slug]
+├ ƒ /invite
+├ ƒ /login
+├ ○ /manifest.webmanifest
+├ ƒ /paper/[topic]/[slug]
+├ ƒ /paper/[topic]/[slug]/canvas
+├ ƒ /settings
+├ ƒ /share/[topic]/[slug]/[shareId]
+├ ƒ /sharing/import
+├ ƒ /viewer
+├ ƒ /welcome
+└ ƒ /workspace
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+NEXT_BUILD=0
